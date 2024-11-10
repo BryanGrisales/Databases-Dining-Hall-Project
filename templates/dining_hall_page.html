@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ dining_hall.name }}</title>
+</head>
+<body>
+    <h1>Menu for {{ dining_hall.name }}</h1>
+    <p>Location: {{ dining_hall.location }}</p>
+    <ul>
+        {% for food in foods %}
+            <li>
+                <strong>{{ food.name }}</strong><br>
+                Protein: {{ food.protein }}g, Carbs: {{ food.carbs }}g, Fat: {{ food.fat }}g, 
+                Sugar: {{ food.sugar }}g, Calories: {{ food.calories }}<br>
+                Serving Size: {{ food.serving_size }}<br>
+                Category: {{ food.category }}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <p><a href="/">Back to Dining Halls</a></p>
+</body>
+</html>

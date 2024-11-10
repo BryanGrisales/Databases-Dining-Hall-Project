@@ -2,52 +2,61 @@
 
 import os
 from sqlalchemy import create_engine, text
-from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect
+from flask import Flask, render_template, request, redirect, url_for
 
+# Set up Flask and database connection
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 
-# Database credentials
 DB_USER = "sa4469"
 DB_PASSWORD = "shunsuke"
 DB_SERVER = "w4111.cisxo09blonu.us-east-1.rds.amazonaws.com"
 DATABASEURI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_SERVER}/w4111"
 
-# Create database engine
 engine = create_engine(DATABASEURI)
 
-@app.before_request
-def before_request():
-    try:
-        g.conn = engine.connect()
-    except Exception as e:
-        print("uh oh, problem connecting to database")
-        import traceback; traceback.print_exc()
-        g.conn = None
+# --- Define routes here ---
 
-@app.teardown_request
-def teardown_request(exception):
-    try:
-        if g.conn is not None:
-            g.conn.close()
-    except Exception as e:
-        pass
+# Route for front dining hall page
+@app.route("/")
+def front_page():
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT hall_id, name, location FROM Dining_Hall"))
+        dining_halls = [{"id": row[0], "name": row[1], "location": row[2]} for row in result]
+    return render_template("front_page.html", dining_halls=dining_halls)
 
-@app.route('/')
-def index():
-    """
-    Index route.
-    """
-    print(request.args)
-    names = []
-    with g.conn as conn:
-        # Query the existing `users` table
-        cursor = conn.execute(text("SELECT * FROM sa4469.users"))
-        names = [result for result in cursor]  # Adjust this based on available columns
-    
-    context = dict(data=names)
-    return render_template("index.html", **context)
+
+@app.route("/dining_hall/<int:hall_id>")
+def dining_hall_page(hall_id):
+    with engine.connect() as conn:
+        # Get dining hall information
+        hall_result = conn.execute(text("SELECT name, location FROM Dining_Hall WHERE hall_id = :hall_id"), {"hall_id": hall_id})
+        dining_hall = hall_result.fetchone()
+        
+        # If dining hall does not exist, return a 404 error
+        if not dining_hall:
+            return "Dining Hall not found", 404
+        
+        # Fetch foods related to the specific dining hall
+        food_query = """
+        SELECT f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, f.serving_size, f.category 
+        FROM Food f
+        JOIN Food_DiningHall fd ON f.food_id = fd.food_id
+        WHERE fd.hall_id = :hall_id
+        """
+        food_result = conn.execute(text(food_query), {"hall_id": hall_id})
+        
+        # Construct list of foods
+        foods = [{
+            "name": row[0], "protein": row[1], "carbs": row[2], "fat": row[3], 
+            "sugar": row[4], "calories": row[5], "serving_size": row[6], "category": row[7]
+        } for row in food_result]
+        
+    return render_template("dining_hall_page.html", dining_hall=dining_hall, foods=foods)
+
+
+
+# --- End of routes ---
 
 if __name__ == "__main__":
     import click
@@ -58,8 +67,6 @@ if __name__ == "__main__":
     @click.argument('HOST', default='0.0.0.0')
     @click.argument('PORT', default=8111, type=int)
     def run(debug, threaded, host, port):
-        HOST, PORT = host, port
-        print("running on %s:%d" % (HOST, PORT))
-        app.run(host=HOST, port=PORT, debug=debug, threaded=threaded)
+        app.run(host=host, port=port, debug=debug, threaded=threaded)
 
     run()

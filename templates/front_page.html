@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dining Halls</title>
+</head>
+<body>
+    <h1>Dining Halls</h1>
+    <ul>
+        {% for hall in dining_halls %}
+            <li>
+                <a href="/dining_hall/{{ hall.id }}">{{ hall.name }}</a><br>
+                Location: {{ hall.location }}
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
