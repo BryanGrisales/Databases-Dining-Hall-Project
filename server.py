@@ -30,29 +30,42 @@ def front_page():
 def dining_hall_page(hall_id):
     with engine.connect() as conn:
         # Get dining hall information
-        hall_result = conn.execute(text("SELECT name, location FROM Dining_Hall WHERE hall_id = :hall_id"), {"hall_id": hall_id})
-        dining_hall = hall_result.fetchone()
-        
-        # If dining hall does not exist, return a 404 error
-        if not dining_hall:
+        hall_query = "SELECT name, location FROM Dining_Hall WHERE hall_id = :hall_id"
+        hall_result = conn.execute(text(hall_query), {"hall_id": hall_id}).fetchone()
+        if not hall_result:
             return "Dining Hall not found", 404
         
-        # Fetch foods related to the specific dining hall
+        # Get foods for this dining hall
         food_query = """
-        SELECT f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, f.serving_size, f.category 
+        SELECT f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, f.serving_size, f.category
         FROM Food f
         JOIN Food_DiningHall fd ON f.food_id = fd.food_id
         WHERE fd.hall_id = :hall_id
         """
         food_result = conn.execute(text(food_query), {"hall_id": hall_id})
+        foods = [{
+            "name": row[0], "protein": row[1], "carbs": row[2], "fat": row[3],
+            "sugar": row[4], "calories": row[5], "serving_size": row[6], "category": row[7]
+        } for row in food_result]
+    
+    return render_template("dining_hall_page.html", hall=hall_result, foods=foods)
+
+
+@app.route("/all_foods")
+def all_foods():
+    with engine.connect() as conn:
+        food_query = """
+        SELECT name, protein, carbs, fat, sugar, calories, serving_size, category 
+        FROM Food
+        """
+        food_result = conn.execute(text(food_query))
         
-        # Construct list of foods
         foods = [{
             "name": row[0], "protein": row[1], "carbs": row[2], "fat": row[3], 
             "sugar": row[4], "calories": row[5], "serving_size": row[6], "category": row[7]
         } for row in food_result]
-        
-    return render_template("dining_hall_page.html", dining_hall=dining_hall, foods=foods)
+    
+    return render_template("all_foods.html", foods=foods)
 
 
 

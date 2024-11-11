@@ -2,23 +2,52 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ dining_hall.name }}</title>
+    <title>Dining Hall Foods</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
-    <h1>Menu for {{ dining_hall.name }}</h1>
-    <p>Location: {{ dining_hall.location }}</p>
-    <ul>
-        {% for food in foods %}
-            <li>
-                <strong>{{ food.name }}</strong><br>
-                Protein: {{ food.protein }}g, Carbs: {{ food.carbs }}g, Fat: {{ food.fat }}g, 
-                Sugar: {{ food.sugar }}g, Calories: {{ food.calories }}<br>
-                Serving Size: {{ food.serving_size }}<br>
-                Category: {{ food.category }}
-            </li>
-        {% endfor %}
-    </ul>
 
-    <p><a href="/">Back to Dining Halls</a></p>
-</body>
-</html>
+<h1>Foods at {{ dining_hall.name }}</h1>
+
+<table id="foodsTable" data-sort-dir="asc">
+    <thead>
+        <tr>
+            <th onclick="sortTable(0)">Name</th>
+            <th onclick="sortTable(1)">Protein (g)</th>
+            <th onclick="sortTable(2)">Carbs (g)</th>
+            <th onclick="sortTable(3)">Fat (g)</th>
+            <th onclick="sortTable(4)">Sugar (g)</th>
+            <th onclick="sortTable(5)">Calories</th>
+            <th onclick="sortTable(6)">Serving Size</th>
+            <th onclick="sortTable(7)">Category</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for food in foods %}
+        <tr>
+            <td>{{ food.name }}</td>
+            <td>{{ food.protein }}</td>
+            <td>{{ food.carbs }}</td>
+            <td>{{ food.fat }}</td>
+            <td>{{ food.sugar }}</td>
+            <td>{{ food.calories }}</td>
+            <td>{{ food.serving_size }}</td>
+            <td>{{ food.category }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</ta
