@@ -17,11 +17,36 @@
         th {
             background-color: #f2f2f2;
         }
+
+        .back-button {
+        display: inline-block;
+        padding: 10px 20px;
+        color: #ffffff;
+        background-color: #007bff;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 1em;
+        font-weight: bold;
+        transition: background-color 0.3s, transform 0.3s;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .back-button:hover {
+        background-color: #0056b3;
+        transform: scale(1.05);
+    }
+
+    .back-button:active {
+        transform: scale(1);
+    }
     </style>
 </head>
 <body>
 
 <h1>All Foods</h1>
+
+<p><a href="/" class="back-button">Back to Menu</a></p>
 
 <table id="foodsTable" data-sort-dir="asc">
     <thead>

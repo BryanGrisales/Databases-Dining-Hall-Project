@@ -3,17 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <title>Dining Halls</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f7f7f7;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dining-hall-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 0;
+            margin: 0;
+            width: 80%;
+            max-width: 1000px;
+            list-style-type: none;
+        }
+
+        .dining-hall-item {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .dining-hall-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .dining-hall-item a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .dining-hall-item a:hover {
+            text-decoration: underline;
+        }
+
+        .location {
+            color: #555;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+
+        .all-foods-link {
+            margin-top: 30px;
+            font-size: 1.1em;
+        }
+
+        .all-foods-link a {
+            color: #333;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .all-foods-link a:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
     <h1>Dining Halls</h1>
-    <ul>
+    
+    <ul class="dining-hall-list">
         {% for hall in dining_halls %}
-            <li>
-                <a href="/dining_hall/{{ hall.id }}">{{ hall.name }}</a><br>
-                Location: {{ hall.location }}
+            <li class="dining-hall-item">
+                <a href="/dining_hall/{{ hall.id }}">{{ hall.name }}</a>
+                <p class="location">{{ hall.location }}</p>
             </li>
         {% endfor %}
     </ul>
-    <p><a href="/all_foods">View All Foods</a></p>
+
+    <div class="all-foods-link">
+        <a href="/all_foods">View All Foods</a>
+    </div>
 </body>
 </html>

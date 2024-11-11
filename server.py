@@ -34,7 +34,7 @@ def dining_hall_page(hall_id):
         hall_result = conn.execute(text(hall_query), {"hall_id": hall_id}).fetchone()
         if not hall_result:
             return "Dining Hall not found", 404
-        
+
         # Get foods for this dining hall
         food_query = """
         SELECT f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, f.serving_size, f.category
@@ -48,6 +48,7 @@ def dining_hall_page(hall_id):
             "sugar": row[4], "calories": row[5], "serving_size": row[6], "category": row[7]
         } for row in food_result]
     
+    # Pass `hall_result` as `hall` to match the template
     return render_template("dining_hall_page.html", hall=hall_result, foods=foods)
 
 
@@ -66,7 +67,6 @@ def all_foods():
         } for row in food_result]
     
     return render_template("all_foods.html", foods=foods)
-
 
 
 # --- End of routes ---
