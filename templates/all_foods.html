@@ -4,71 +4,84 @@
     <meta charset="UTF-8">
     <title>All Foods</title>
     <style>
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { cursor: pointer; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
-    <h1>All Foods</h1>
-    <table id="foodsTable">
-        <thead>
-            <tr>
-                <th onclick="sortTable(0)">Name</th>
-                <th onclick="sortTable(1)">Protein (g)</th>
-                <th onclick="sortTable(2)">Carbs (g)</th>
-                <th onclick="sortTable(3)">Fat (g)</th>
-                <th onclick="sortTable(4)">Sugar (g)</th>
-                <th onclick="sortTable(5)">Calories</th>
-                <th onclick="sortTable(6)">Serving Size</th>
-                <th onclick="sortTable(7)">Category</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for food in foods %}
-            <tr>
-                <td>{{ food.name }}</td>
-                <td>{{ food.protein }}</td>
-                <td>{{ food.carbs }}</td>
-                <td>{{ food.fat }}</td>
-                <td>{{ food.sugar }}</td>
-                <td>{{ food.calories }}</td>
-                <td>{{ food.serving_size }}</td>
-                <td>{{ food.category }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 
-    <script>
-        // Function to sort table columns
-        function sortTable(columnIndex) {
-            var table = document.getElementById("foodsTable");
-            var rows = Array.from(table.rows).slice(1);
-            var isAsc = table.getAttribute("data-sort-dir") === "asc";
+<h1>All Foods</h1>
 
-            rows.sort(function(rowA, rowB) {
-                var cellA = rowA.cells[columnIndex].innerText;
-                var cellB = rowB.cells[columnIndex].innerText;
+<table id="foodsTable" data-sort-dir="asc">
+    <thead>
+        <tr>
+            <th onclick="sortTable(0)">Name</th>
+            <th onclick="sortTable(1)">Protein (g)</th>
+            <th onclick="sortTable(2)">Carbs (g)</th>
+            <th onclick="sortTable(3)">Fat (g)</th>
+            <th onclick="sortTable(4)">Sugar (g)</th>
+            <th onclick="sortTable(5)">Calories</th>
+            <th onclick="sortTable(6)">Serving Size</th>
+            <th onclick="sortTable(7)">Category</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for food in foods %}
+        <tr>
+            <td>{{ food.name }}</td>
+            <td>{{ food.protein }}</td>
+            <td>{{ food.carbs }}</td>
+            <td>{{ food.fat }}</td>
+            <td>{{ food.sugar }}</td>
+            <td>{{ food.calories }}</td>
+            <td>{{ food.serving_size }}</td>
+            <td>{{ food.category }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-                if (!isNaN(cellA) && !isNaN(cellB)) {
-                    cellA = parseFloat(cellA);
-                    cellB = parseFloat(cellB);
-                }
-                
+<script>
+    function sortTable(columnIndex) {
+        var table = document.getElementById("foodsTable");
+        var rows = Array.from(table.rows).slice(1); // Exclude header row
+        var isAsc = table.getAttribute("data-sort-dir") === "asc";
+        const numericColumns = [1, 2, 3, 4, 5]; // Columns that should be sorted as numbers
+
+        rows.sort(function(rowA, rowB) {
+            var cellA = rowA.cells[columnIndex].innerText.trim();
+            var cellB = rowB.cells[columnIndex].innerText.trim();
+
+            if (!cellA && !cellB) return 0;
+            if (!cellA) return isAsc ? 1 : -1;
+            if (!cellB) return isAsc ? -1 : 1;
+
+            if (numericColumns.includes(columnIndex)) {
+                cellA = parseFloat(cellA) || 0; 
+                cellB = parseFloat(cellB) || 0;
+                return isAsc ? cellA - cellB : cellB - cellA;
+            } else {
                 return isAsc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
-            });
-
-            // Toggle the sorting direction
-            table.setAttribute("data-sort-dir", isAsc ? "desc" : "asc");
-
-            // Append sorted rows
-            for (var i = 0; i < rows.length; i++) {
-                table.appendChild(rows[i]);
             }
-        }
-    </script>
+        });
 
-    <p><a href="/">Back to Dining Halls</a></p>
+        table.setAttribute("data-sort-dir", isAsc ? "desc" : "asc");
+
+        var tbody = table.querySelector("tbody");
+        rows.forEach(row => tbody.appendChild(row));
+    }
+</script>
+
 </body>
 </html>
