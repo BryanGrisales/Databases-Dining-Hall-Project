@@ -19,27 +19,27 @@
         }
 
         .back-button {
-        display: inline-block;
-        padding: 10px 20px;
-        color: #ffffff;
-        background-color: #007bff;
-        border-radius: 5px;
-        text-decoration: none;
-        font-size: 1em;
-        font-weight: bold;
-        transition: background-color 0.3s, transform 0.3s;
-        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-    }
+            display: inline-block;
+            padding: 10px 20px;
+            color: #ffffff;
+            background-color: #007bff;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
 
-    .back-button:hover {
-        background-color: #0056b3;
-        transform: scale(1.05);
-    }
+        .back-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
 
-    .back-button:active {
-        transform: scale(1);
-    }
+        .back-button:active {
+            transform: scale(1);
+        }
     </style>
 </head>
 <body>
@@ -59,6 +59,7 @@
             <th onclick="sortTable(5)">Calories</th>
             <th onclick="sortTable(6)">Serving Size</th>
             <th onclick="sortTable(7)">Category</th>
+            <th onclick="sortTable(8)">Dining Halls</th> <!-- New Column for Sorting -->
         </tr>
     </thead>
     <tbody>
@@ -72,6 +73,7 @@
             <td>{{ food.calories }}</td>
             <td>{{ food.serving_size }}</td>
             <td>{{ food.category }}</td>
+            <td>{{ food.dining_halls }}</td> <!-- Dining Halls Data -->
         </tr>
         {% endfor %}
     </tbody>
@@ -97,6 +99,7 @@
                 cellB = parseFloat(cellB) || 0;
                 return isAsc ? cellA - cellB : cellB - cellA;
             } else {
+                // Sort alphabetically for non-numeric columns (e.g., Dining Halls)
                 return isAsc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
             }
         });

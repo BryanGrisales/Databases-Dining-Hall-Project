@@ -2,11 +2,19 @@
 
 import os
 from sqlalchemy import create_engine, text
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask_bcrypt import Bcrypt
+from flask_session import Session
+from functools import wraps
 
 # Set up Flask and database connection
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
+bcrypt = Bcrypt(app)
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_PERMANENT"] = False
+app.secret_key = "your_secret_key"  # Use a secure key in production
+Session(app)
 
 DB_USER = "sa4469"
 DB_PASSWORD = "shunsuke"
@@ -15,7 +23,21 @@ DATABASEURI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_SERVER}/w4111"
 
 engine = create_engine(DATABASEURI)
 
-# --- Define routes here ---
+# --- Define helper functions and decorators ---
+
+# Role-based access control decorator
+def role_required(role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if "user_id" not in session or session.get("role") != role:
+                flash("Access denied: Insufficient permissions", "danger")
+                return redirect(url_for("front_page"))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# --- Define routes ---
 
 # Route for front dining hall page
 @app.route("/")
@@ -48,7 +70,6 @@ def dining_hall_page(hall_id):
             "sugar": row[4], "calories": row[5], "serving_size": row[6], "category": row[7]
         } for row in food_result]
     
-    # Pass `hall_result` as `hall` to match the template
     return render_template("dining_hall_page.html", hall=hall_result, foods=foods)
 
 
@@ -56,20 +77,82 @@ def dining_hall_page(hall_id):
 def all_foods():
     with engine.connect() as conn:
         food_query = """
-        SELECT name, protein, carbs, fat, sugar, calories, serving_size, category 
-        FROM Food
+        SELECT f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
+               f.serving_size, f.category, 
+               STRING_AGG(dh.name, ', ') AS dining_halls
+        FROM Food f
+        LEFT JOIN Food_DiningHall fd ON f.food_id = fd.food_id
+        LEFT JOIN Dining_Hall dh ON fd.hall_id = dh.hall_id
+        GROUP BY f.food_id
         """
         food_result = conn.execute(text(food_query))
         
         foods = [{
             "name": row[0], "protein": row[1], "carbs": row[2], "fat": row[3], 
-            "sugar": row[4], "calories": row[5], "serving_size": row[6], "category": row[7]
+            "sugar": row[4], "calories": row[5], "serving_size": row[6], 
+            "category": row[7], "dining_halls": row[8]
         } for row in food_result]
     
     return render_template("all_foods.html", foods=foods)
 
 
-# --- End of routes ---
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+        role = request.form.get("role", "Visitor")
+
+        hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
+
+        with engine.connect() as conn:
+            try:
+                conn.execute(text("INSERT INTO Users (email, password, role) VALUES (:email, :password, :role)"),
+                             {"email": email, "password": hashed_password, "role": role})
+                flash("Registration successful!", "success")
+                return redirect(url_for("login"))
+            except Exception as e:
+                flash("Registration failed. Please try again.", "danger")
+    return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        with engine.connect() as conn:
+            user = conn.execute(text("SELECT * FROM Users WHERE email = :email"), {"email": email}).fetchone()
+
+        if user and bcrypt.check_password_hash(user["password"], password):
+            session["user_id"] = user["user_id"]
+            session["role"] = user["role"]
+            flash("Login successful!", "success")
+            return redirect(url_for("front_page"))
+        else:
+            flash("Invalid email or password", "danger")
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been logged out", "info")
+    return redirect(url_for("front_page"))
+
+# Admin-only dashboard
+@app.route("/admin_dashboard")
+@role_required("Admin")
+def admin_dashboard():
+    return render_template("admin_dashboard.html")
+
+
+# Custom error page for Access Denied (Optional)
+@app.errorhandler(403)
+def access_denied(error):
+    return render_template("403.html"), 403
+
 
 if __name__ == "__main__":
     import click

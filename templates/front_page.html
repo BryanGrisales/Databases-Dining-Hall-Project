@@ -81,11 +81,40 @@
             background-color: #007bff;
             color: #fff;
         }
+
+        .auth-links {
+            margin-top: 15px;
+            font-size: 1em;
+            margin-bottom: 20px;
+        }
+
+        .auth-links a {
+            color: #007bff;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <h1>Dining Halls</h1>
-    
+
+    <!-- Authentication Links -->
+    <div class="auth-links">
+        {% if session.get("user_id") %}
+            <span>Welcome, {{ session["user_id"] }}!</span>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+
+            <a href="{{ url_for('register') }}">Register</a>
+
+        {% endif %}
+    </div>
+
     <ul class="dining-hall-list">
         {% for hall in dining_halls %}
             <li class="dining-hall-item">
