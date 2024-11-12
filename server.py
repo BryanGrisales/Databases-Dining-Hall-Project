@@ -125,11 +125,15 @@ def login():
         with engine.connect() as conn:
             user = conn.execute(text("SELECT * FROM Users WHERE email = :email"), {"email": email}).fetchone()
 
-        if user and bcrypt.check_password_hash(user["password"], password):
-            session["user_id"] = user["user_id"]
-            session["role"] = user["role"]
+        if user and user[2] == password:  # Access 'password' using the column index
+            session["user_id"] = user[0]  # Assuming user_id is the first column
+            session["role"] = user[3]  # Assuming role is the fourth column
             flash("Login successful!", "success")
-            return redirect(url_for("front_page"))
+            # Redirect to admin dashboard if the user is an Admin
+            if session["role"] == "Admin":
+                return redirect(url_for("admin_dashboard"))
+            else:
+                return redirect(url_for("front_page"))
         else:
             flash("Invalid email or password", "danger")
     return render_template("login.html")
@@ -152,6 +156,40 @@ def admin_dashboard():
 @app.errorhandler(403)
 def access_denied(error):
     return render_template("403.html"), 403
+
+@app.route("/request_food", methods=["GET", "POST"])
+def request_food():
+    if "user_id" not in session:
+        flash("Please log in to make a food request.", "warning")
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        request_food_item = request.form.get("request_food_item")
+        description = request.form.get("description")
+        user_id = session["user_id"]
+
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    INSERT INTO Request (user_id, request_food_item, description, request_status, request_date)
+                    VALUES (:user_id, :request_food_item, :description, 'pending', CURRENT_DATE)
+                """),
+                {"user_id": user_id, "request_food_item": request_food_item, "description": description}
+            )
+
+        flash("Food request submitted successfully!", "success")
+        return redirect(url_for("front_page"))
+
+    return render_template("request_food.html")
+
+@app.route("/admin_requests")
+@role_required("Admin")
+def admin_requests():
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT * FROM Request WHERE request_status = 'pending'"))
+        requests = [{"request_id": row[0], "user_id": row[1], "food_item": row[2], "description": row[3]} for row in result]
+    return render_template("admin_requests.html", requests=requests)
+
 
 
 if __name__ == "__main__":

@@ -101,17 +101,14 @@
 </head>
 <body>
     <h1>Dining Halls</h1>
-
-    <!-- Authentication Links -->
     <div class="auth-links">
         {% if session.get("user_id") %}
-            <span>Welcome, {{ session["user_id"] }}!</span>
+            <span>Welcome, {{ session["user_id"] }}{% if session.get("role") == "Admin" %} (Admin){% endif %}!</span>
             <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('request_food') }}">Request New Food Item</a>
         {% else %}
             <a href="{{ url_for('login') }}">Login</a>
-
             <a href="{{ url_for('register') }}">Register</a>
-
         {% endif %}
     </div>
 

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Food Requests</title>
+</head>
+<body>
+    <h1>Pending Food Requests</h1>
+    <table>
+        <tr>
+            <th>Request ID</th>
+            <th>User ID</th>
+            <th>Food Item</th>
+            <th>Description</th>
+            <th>Request Date</th>
+            <th>Actions</th>
+        </tr>
+        {% for req in requests %}
+        <tr>
+            <td>{{ req.request_id }}</td>
+            <td>{{ req.user_id }}</td>
+            <td>{{ req.request_food_item }}</td>
+            <td>{{ req.description }}</td>
+            <td>{{ req.request_date }}</td>
+            <td>
+                <a href="{{ url_for('update_request', request_id=req.request_id, status='approved') }}">Approve</a>
+                <a href="{{ url_for('update_request', request_id=req.request_id, status='denied') }}">Deny</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <p><a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a></p>
+</body>
+</html>
