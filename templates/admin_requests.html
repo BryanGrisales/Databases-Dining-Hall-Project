@@ -3,6 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Food Requests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .actions a {
+            margin: 0 5px;
+            padding: 8px 12px;
+            text-decoration: none;
+            border-radius: 4px;
+            color: white;
+        }
+        .approve {
+            background-color: #28a745;
+        }
+        .deny {
+            background-color: #dc3545;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
     <h1>Pending Food Requests</h1>
@@ -22,13 +77,13 @@
             <td>{{ req.request_food_item }}</td>
             <td>{{ req.description }}</td>
             <td>{{ req.request_date }}</td>
-            <td>
-                <a href="{{ url_for('update_request', request_id=req.request_id, status='approved') }}">Approve</a>
-                <a href="{{ url_for('update_request', request_id=req.request_id, status='denied') }}">Deny</a>
+            <td class="actions">
+                <a href="{{ url_for('update_request', request_id=req.request_id, status='approved') }}" class="approve">Approve</a>
+                <a href="{{ url_for('update_request', request_id=req.request_id, status='denied') }}" class="deny">Deny</a>
             </td>
         </tr>
         {% endfor %}
     </table>
-    <p><a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a></p>
+    <p><a href="{{ url_for('admin_dashboard') }}" class="back-link">Back to Admin Dashboard</a></p>
 </body>
 </html>

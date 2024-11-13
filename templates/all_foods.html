@@ -65,7 +65,7 @@
     <tbody>
         {% for food in foods %}
         <tr>
-            <td>{{ food.name }}</td>
+            <td><a href="{{ url_for('view_records', food_id=food.food_id) }}">{{ food.name }}</a></td>
             <td>{{ food.protein }}</td>
             <td>{{ food.carbs }}</td>
             <td>{{ food.fat }}</td>
@@ -73,7 +73,7 @@
             <td>{{ food.calories }}</td>
             <td>{{ food.serving_size }}</td>
             <td>{{ food.category }}</td>
-            <td>{{ food.dining_halls }}</td> <!-- Dining Halls Data -->
+            <td>{{ food.dining_halls }}</td>
         </tr>
         {% endfor %}
     </tbody>

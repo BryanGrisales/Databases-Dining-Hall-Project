@@ -3,12 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f7f7f7;
+        }
+
+        .dashboard-container {
+            width: 80%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .admin-info {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .admin-info p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .dashboard-links {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .dashboard-links li {
+            margin: 15px 0;
+        }
+
+        .dashboard-links a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: bold;
+            padding: 10px 20px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .dashboard-links a:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .back-link {
+            margin-top: 20px;
+            display: inline-block;
+            color: #555;
+            font-size: 1em;
+            text-decoration: none;
+            border-bottom: 1px dashed #555;
+            padding-bottom: 2px;
+            transition: color 0.3s, border-color 0.3s;
+        }
+
+        .back-link:hover {
+            color: #333;
+            border-color: #333;
+        }
+    </style>
 </head>
 <body>
-    <h1>Admin Dashboard</h1>
-    <ul>
-        <li><a href="{{ url_for('admin_requests') }}">View Pending Food Requests</a></li>
-    </ul>
-    <p><a href="{{ url_for('front_page') }}">Back to Menu</a></p>
+    <div class="dashboard-container">
+        <h1>Admin Dashboard</h1>
+
+        <!-- Admin Info Section -->
+        <div class="admin-info">
+            <h2>Admin Information</h2>
+            <p><strong>Name:</strong> {{ session.get("user_name", "Admin Name") }}</p>
+            <p><strong>Email:</strong> {{ session.get("user_email", "admin@example.com") }}</p>
+            <p><strong>Role:</strong> Administrator</p>
+        </div>
+
+        <!-- Admin Links -->
+        <ul class="dashboard-links">
+            <li><a href="{{ url_for('admin_requests') }}">View Pending Food Requests</a></li>
+        </ul>
+
+        <a href="{{ url_for('front_page') }}" class="back-link">Back to Menu</a>
+    </div>
 </body>
 </html>

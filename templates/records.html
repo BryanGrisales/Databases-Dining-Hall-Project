@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Records for {{ food.name }}</title>
+    <style>
+        /* Basic styling for layout */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        h1 {
+            color: #333;
+        }
+        .record-list, .record-form {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .record-item {
+            margin-bottom: 15px;
+        }
+        .record-item p {
+            margin: 0;
+        }
+        .record-item small {
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>Records for {{ food.name }}</h1>
+    <p>Calories: {{ food.calories }}</p>
+
+    <div class="record-list">
+        <h2>Existing Records</h2>
+        {% if records %}
+            {% for record in records %}
+                <div class="record-item">
+                    <p>{{ record.content }}</p>
+                    <small>By {{ record.email }} on {{ record.time }}</small>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No records found for this item.</p>
+        {% endif %}
+    </div>
+
+    {% if session.get("user_id") %}
+        <div class="record-form">
+            <h2>Add a New Record</h2>
+            <form method="POST">
+                <textarea name="content" rows="4" placeholder="Share your thoughts about this food item..." required></textarea>
+                <br>
+                <button type="submit">Submit Record</button>
+            </form>
+        </div>
+    {% else %}
+        <p><a href="{{ url_for('login') }}">Log in</a> to add a record.</p>
+    {% endif %}
+</body>
+</html>

@@ -77,7 +77,7 @@ def dining_hall_page(hall_id):
 def all_foods():
     with engine.connect() as conn:
         food_query = """
-        SELECT f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
+        SELECT f.food_id, f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
                f.serving_size, f.category, 
                STRING_AGG(dh.name, ', ') AS dining_halls
         FROM Food f
@@ -88,12 +88,13 @@ def all_foods():
         food_result = conn.execute(text(food_query))
         
         foods = [{
-            "name": row[0], "protein": row[1], "carbs": row[2], "fat": row[3], 
-            "sugar": row[4], "calories": row[5], "serving_size": row[6], 
-            "category": row[7], "dining_halls": row[8]
+            "food_id": row[0], "name": row[1], "protein": row[2], "carbs": row[3], 
+            "fat": row[4], "sugar": row[5], "calories": row[6], "serving_size": row[7], 
+            "category": row[8], "dining_halls": row[9]
         } for row in food_result]
     
     return render_template("all_foods.html", foods=foods)
+
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -123,20 +124,26 @@ def login():
         password = request.form.get("password")
 
         with engine.connect() as conn:
-            user = conn.execute(text("SELECT * FROM Users WHERE email = :email"), {"email": email}).fetchone()
+            user = conn.execute(
+                text("SELECT user_id, email, password, role FROM Users WHERE email = :email"),
+                {"email": email}
+            ).mappings().fetchone()
 
-        if user and user[2] == password:  # Access 'password' using the column index
-            session["user_id"] = user[0]  # Assuming user_id is the first column
-            session["role"] = user[3]  # Assuming role is the fourth column
+        if user and user["password"] == password:  # Access password by key
+            session["user_id"] = user["user_id"]
+            session["user_email"] = user["email"]
+            session["role"] = user["role"]
+            session["user_name"] = "Admin Name"  # Placeholder name for now
+
             flash("Login successful!", "success")
-            # Redirect to admin dashboard if the user is an Admin
-            if session["role"] == "Admin":
+            if user["role"] == "Admin":
                 return redirect(url_for("admin_dashboard"))
             else:
                 return redirect(url_for("front_page"))
         else:
             flash("Invalid email or password", "danger")
     return render_template("login.html")
+
 
 
 @app.route("/logout")
@@ -182,6 +189,49 @@ def request_food():
 
     return render_template("request_food.html")
 
+@app.route("/records/<int:food_id>", methods=["GET", "POST"])
+def view_records(food_id):
+    if "user_id" not in session:
+        flash("Please log in to view or create records.", "warning")
+        return redirect(url_for("login"))
+
+    with engine.connect() as conn:
+        # Fetch food details
+        food_query = "SELECT name, calories FROM Food WHERE food_id = :food_id"
+        food = conn.execute(text(food_query), {"food_id": food_id}).fetchone()
+
+        # Fetch existing records for this food item
+        records_query = """
+        SELECT r.content, r.time, u.email 
+        FROM Record r
+        JOIN Users u ON r.user_id = u.user_id
+        WHERE r.food_id = :food_id
+        ORDER BY r.time DESC
+        """
+        records = conn.execute(text(records_query), {"food_id": food_id}).fetchall()
+
+    if request.method == "POST":
+        # Ensure the user is logged in
+        if "user_id" not in session:
+            flash("Please log in to create a record.", "warning")
+            return redirect(url_for("login"))
+
+        # Get the form data
+        content = request.form.get("content")
+        user_id = session["user_id"]
+
+        # Insert the new record into the database
+        with engine.connect() as conn:
+            conn.execute(
+                text("INSERT INTO Record (food_id, user_id, content, time) VALUES (:food_id, :user_id, :content, CURRENT_TIMESTAMP)"),
+                {"food_id": food_id, "user_id": user_id, "content": content}
+            )
+        flash("Your record has been added successfully!", "success")
+        return redirect(url_for("view_records", food_id=food_id))
+
+    return render_template("records.html", food=food, records=records)
+
+
 @app.route("/admin_requests")
 @role_required("Admin")
 def admin_requests():
@@ -189,6 +239,20 @@ def admin_requests():
         result = conn.execute(text("SELECT * FROM Request WHERE request_status = 'pending'"))
         requests = [{"request_id": row[0], "user_id": row[1], "food_item": row[2], "description": row[3]} for row in result]
     return render_template("admin_requests.html", requests=requests)
+
+# --- Add this route to handle request updates (e.g., approving or rejecting requests) ---
+@app.route("/update_request/<int:request_id>/<status>")
+@role_required("Admin")
+def update_request(request_id, status):
+    with engine.connect() as conn:
+        # Update the request status in the database
+        conn.execute(
+            text("UPDATE Request SET request_status = :status WHERE request_id = :request_id"),
+            {"status": status, "request_id": request_id}
+        )
+    flash(f"Request {status.capitalize()} successfully.", "success")
+    return redirect(url_for("admin_requests"))
+
 
 
 
