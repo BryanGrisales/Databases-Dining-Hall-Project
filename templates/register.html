@@ -3,16 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+        }
+
+        .register-container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .register-container h1 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .register-container label {
+            display: block;
+            text-align: left;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .register-container input[type="email"],
+        .register-container input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .register-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .register-container button:hover {
+            background-color: #218838;
+        }
+
+        .register-container p {
+            margin-top: 15px;
+            color: #666;
+        }
+
+        .register-container a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .register-container a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h1>Register</h1>
-    <form method="POST" action="{{ url_for('register') }}">
-        <label for="email">Email:</label>
-        <input type="email" name="email" required><br>
-        <label for="password">Password:</label>
-        <input type="password" name="password" required><br>
-        <button type="submit">Register</button>
-    </form>
-    <p><a href="{{ url_for('front_page') }}">Back to Home</a></p>
+    <div class="register-container">
+        <h1>Register</h1>
+        <form method="POST" action="{{ url_for('register') }}">
+            <label for="email">Email:</label>
+            <input type="email" name="email" id="email" required>
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required>
+            <button type="submit">Register</button>
+        </form>
+        <p><a href="{{ url_for('front_page') }}">Back to Home</a></p>
+    </div>
 </body>
 </html>
