@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Requests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            color: #ffffff;
+            background-color: #007bff;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+            margin-top: 20px;
+            margin-right: 10px;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .back-button:active {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body>
+    <h1>My Requests</h1>
+
+    {% if requests %}
+    <table>
+        <thead>
+            <tr>
+                <th>Request ID</th>
+                <th>Food Item</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Request Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in requests %}
+            <tr>
+                <td>{{ request.request_id }}</td>
+                <td>{{ request.request_food_item }}</td>
+                <td>{{ request.description }}</td>
+                <td>{{ request.request_status }}</td>
+                <td>{{ request.request_date }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>You have not made any requests yet.</p>
+    {% endif %}
+
+    <a href="{{ url_for('user_dashboard') }}" class="back-button">Back to Dashboard</a>
+    <a href="{{ url_for('front_page') }}" class="back-button">Back to Home</a>
+</body>
+</html>

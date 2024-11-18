@@ -50,6 +50,11 @@ def front_page():
 
 @app.route("/dining_hall/<int:hall_id>")
 def dining_hall_page(hall_id):
+    query = request.args.get("query", "").lower()  # Get the search query
+    search_type = request.args.get("search_type", "food").lower()  # Default to 'food'
+    page = int(request.args.get("page", 1))  # Get the current page, default to 1
+    per_page = 10  # Number of items per page
+
     with engine.connect() as conn:
         # Get dining hall information
         hall_query = "SELECT name, location FROM Dining_Hall WHERE hall_id = :hall_id"
@@ -57,43 +62,119 @@ def dining_hall_page(hall_id):
         if not hall_result:
             return "Dining Hall not found", 404
 
-        # Get foods for this dining hall
-        food_query = """
-        SELECT f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, f.serving_size, f.category
+        # Build the WHERE clause for filtering
+        where_clause = "1=1"
+        if search_type == "food":
+            where_clause = "LOWER(f.name) LIKE :query"
+        elif search_type == "category":
+            where_clause = "LOWER(f.category) LIKE :query"
+
+        # Query for foods with filtering and pagination
+        food_query = f"""
+        SELECT f.food_id, f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
+               f.serving_size, f.category
         FROM Food f
         JOIN Food_DiningHall fd ON f.food_id = fd.food_id
-        WHERE fd.hall_id = :hall_id
+        WHERE fd.hall_id = :hall_id AND {where_clause}
+        LIMIT :limit OFFSET :offset
         """
-        food_result = conn.execute(text(food_query), {"hall_id": hall_id})
-        foods = [{
-            "name": row[0], "protein": row[1], "carbs": row[2], "fat": row[3],
-            "sugar": row[4], "calories": row[5], "serving_size": row[6], "category": row[7]
-        } for row in food_result]
-    
-    return render_template("dining_hall_page.html", hall=hall_result, foods=foods)
+
+        # Pagination parameters
+        limit = per_page
+        offset = (page - 1) * per_page
+        foods = conn.execute(
+            text(food_query),
+            {"hall_id": hall_id, "query": f"%{query}%", "limit": limit, "offset": offset},
+        ).fetchall()
+
+        # Count total items for pagination
+        count_query = f"""
+        SELECT COUNT(f.food_id) AS total
+        FROM Food f
+        JOIN Food_DiningHall fd ON f.food_id = fd.food_id
+        WHERE fd.hall_id = :hall_id AND {where_clause}
+        """
+        total_count = conn.execute(
+            text(count_query), {"hall_id": hall_id, "query": f"%{query}%"}
+        ).scalar()
+
+    total_pages = (total_count + per_page - 1) // per_page  # Calculate total pages
+
+    return render_template(
+        "dining_hall_page.html",
+        hall=hall_result,
+        foods=foods,
+        query=query,
+        search_type=search_type,
+        page=page,
+        total_pages=total_pages,
+        hall_id=hall_id,  # Pass hall_id explicitly
+    )
+
 
 
 @app.route("/all_foods")
 def all_foods():
+    query = request.args.get("query", "").lower()  # Get the search query
+    search_type = request.args.get("search_type", "food").lower()  # Default to 'food'
+    page = int(request.args.get("page", 1))  # Get the current page, default to 1
+    per_page = 10  # Number of items per page
+
     with engine.connect() as conn:
-        food_query = """
+        # Build the WHERE clause based on the search type
+        where_clause = "1=1"  # Default: no filtering
+        if search_type == "food":
+            where_clause = "LOWER(f.name) LIKE :query"
+        elif search_type == "category":
+            where_clause = "LOWER(f.category) LIKE :query"
+        elif search_type == "dining_hall":
+            where_clause = "LOWER(dh.name) LIKE :query"
+
+        # Query for foods with filtering and pagination
+        food_query = f"""
         SELECT f.food_id, f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
                f.serving_size, f.category, 
                STRING_AGG(dh.name, ', ') AS dining_halls
         FROM Food f
         LEFT JOIN Food_DiningHall fd ON f.food_id = fd.food_id
         LEFT JOIN Dining_Hall dh ON fd.hall_id = dh.hall_id
+        WHERE {where_clause}
         GROUP BY f.food_id
+        LIMIT :limit OFFSET :offset
         """
-        food_result = conn.execute(text(food_query))
-        
-        foods = [{
-            "food_id": row[0], "name": row[1], "protein": row[2], "carbs": row[3], 
-            "fat": row[4], "sugar": row[5], "calories": row[6], "serving_size": row[7], 
-            "category": row[8], "dining_halls": row[9]
-        } for row in food_result]
-    
-    return render_template("all_foods.html", foods=foods)
+
+        # Pagination parameters
+        limit = per_page
+        offset = (page - 1) * per_page
+        foods = conn.execute(
+            text(food_query),
+            {"query": f"%{query}%", "limit": limit, "offset": offset},
+        ).fetchall()
+
+        # Count total items for pagination
+        count_query = f"""
+        SELECT COUNT(DISTINCT f.food_id) AS total
+        FROM Food f
+        LEFT JOIN Food_DiningHall fd ON f.food_id = fd.food_id
+        LEFT JOIN Dining_Hall dh ON fd.hall_id = dh.hall_id
+        WHERE {where_clause}
+        """
+        total_count = conn.execute(
+            text(count_query), {"query": f"%{query}%"}
+        ).scalar()
+
+    total_pages = (total_count + per_page - 1) // per_page  # Calculate total pages
+
+    return render_template(
+        "all_foods.html",
+        foods=foods,
+        query=query,
+        search_type=search_type,
+        page=page,
+        total_pages=total_pages,
+    )
+
+
 
 
 
@@ -102,14 +183,21 @@ def register():
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
         role = request.form.get("role", "Visitor")
+
+        if password != confirm_password:
+            flash("Passwords do not match. Please try again.", "danger")
+            return render_template("register.html") 
 
         hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
 
         with engine.connect() as conn:
             try:
-                conn.execute(text("INSERT INTO Users (email, password, role) VALUES (:email, :password, :role)"),
-                             {"email": email, "password": hashed_password, "role": role})
+                conn.execute(
+                    text("INSERT INTO Users (email, password, role) VALUES (:email, :password, :role)"),
+                    {"email": email, "password": hashed_password, "role": role}
+                )
                 flash("Registration successful!", "success")
                 return redirect(url_for("login"))
             except Exception as e:
@@ -133,16 +221,16 @@ def login():
             session["user_id"] = user["user_id"]
             session["user_email"] = user["email"]
             session["role"] = user["role"]
-            session["user_name"] = "Admin Name"  # Placeholder name for now
 
             flash("Login successful!", "success")
             if user["role"] == "Admin":
                 return redirect(url_for("admin_dashboard"))
             else:
-                return redirect(url_for("front_page"))
+                return redirect(url_for("user_dashboard"))
         else:
             flash("Invalid email or password", "danger")
     return render_template("login.html")
+
 
 
 
@@ -156,7 +244,25 @@ def logout():
 @app.route("/admin_dashboard")
 @role_required("Admin")
 def admin_dashboard():
-    return render_template("admin_dashboard.html")
+    user_id = session["user_id"]
+
+    with engine.connect() as conn:
+        # Fetch the admin's information
+        user_query = "SELECT user_id, email, role FROM Users WHERE user_id = :user_id"
+        user = conn.execute(text(user_query), {"user_id": user_id}).fetchone()
+
+        # Fetch all records created by the admin
+        records_query = """
+        SELECT r.content, r.time, f.name AS food_name 
+        FROM Record r
+        JOIN Food f ON r.food_id = f.food_id
+        WHERE r.user_id = :user_id
+        ORDER BY r.time DESC
+        """
+        records = conn.execute(text(records_query), {"user_id": user_id}).fetchall()
+
+    return render_template("admin_dashboard.html", user=user, records=records)
+
 
 
 # Custom error page for Access Denied (Optional)
@@ -191,10 +297,6 @@ def request_food():
 
 @app.route("/records/<int:food_id>", methods=["GET", "POST"])
 def view_records(food_id):
-    if "user_id" not in session:
-        flash("Please log in to view or create records.", "warning")
-        return redirect(url_for("login"))
-
     with engine.connect() as conn:
         # Fetch food details
         food_query = "SELECT name, calories FROM Food WHERE food_id = :food_id"
@@ -210,13 +312,14 @@ def view_records(food_id):
         """
         records = conn.execute(text(records_query), {"food_id": food_id}).fetchall()
 
+    # Check if the request is a POST (attempt to add a new record)
     if request.method == "POST":
         # Ensure the user is logged in
         if "user_id" not in session:
             flash("Please log in to create a record.", "warning")
             return redirect(url_for("login"))
 
-        # Get the form data
+        # Get the form data for creating a new record
         content = request.form.get("content")
         user_id = session["user_id"]
 
@@ -232,6 +335,7 @@ def view_records(food_id):
     return render_template("records.html", food=food, records=records)
 
 
+
 @app.route("/admin_requests")
 @role_required("Admin")
 def admin_requests():
@@ -240,7 +344,6 @@ def admin_requests():
         requests = [{"request_id": row[0], "user_id": row[1], "food_item": row[2], "description": row[3]} for row in result]
     return render_template("admin_requests.html", requests=requests)
 
-# --- Add this route to handle request updates (e.g., approving or rejecting requests) ---
 @app.route("/update_request/<int:request_id>/<status>")
 @role_required("Admin")
 def update_request(request_id, status):
@@ -253,6 +356,57 @@ def update_request(request_id, status):
     flash(f"Request {status.capitalize()} successfully.", "success")
     return redirect(url_for("admin_requests"))
 
+def user_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session or session.get("role") != "Visitor":
+            flash("Access denied: Admin users cannot access the user dashboard", "danger")
+            return redirect(url_for("admin_dashboard"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route("/user_dashboard")
+@user_only
+def user_dashboard():
+    user_id = session["user_id"]
+    with engine.connect() as conn:
+        # Fetch user information
+        user_query = "SELECT user_id, email, role FROM Users WHERE user_id = :user_id"
+        user = conn.execute(text(user_query), {"user_id": user_id}).fetchone()
+
+        # Fetch records created by the user
+        records_query = """
+        SELECT r.content, r.time, f.name AS food_name 
+        FROM Record r
+        JOIN Food f ON r.food_id = f.food_id
+        WHERE r.user_id = :user_id
+        ORDER BY r.time DESC
+        """
+        records = conn.execute(text(records_query), {"user_id": user_id}).fetchall()
+
+    return render_template("user_dashboard.html", user=user, records=records)
+
+
+@app.route("/my_requests")
+def my_requests():
+    # Ensure the user is logged in
+    if "user_id" not in session:
+        flash("Please log in to view your requests.", "warning")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+
+    with engine.connect() as conn:
+        # Query to fetch user requests
+        requests_query = """
+        SELECT request_id, request_food_item, description, request_status, request_date
+        FROM Request
+        WHERE user_id = :user_id
+        ORDER BY request_date DESC
+        """
+        user_requests = conn.execute(text(requests_query), {"user_id": user_id}).fetchall()
+
+    return render_template("my_requests.html", requests=user_requests)
 
 
 

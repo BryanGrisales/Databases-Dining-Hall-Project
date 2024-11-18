@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+    <title>User Dashboard</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,6 +14,7 @@
             margin: 0;
             background-color: #f7f7f7;
         }
+
         .dashboard-container {
             width: 80%;
             max-width: 800px;
@@ -23,9 +24,11 @@
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
+
         h1 {
             color: #333;
         }
+
         .user-info {
             background-color: #f0f0f0;
             padding: 15px;
@@ -33,30 +36,34 @@
             border-radius: 5px;
             text-align: left;
         }
+
         .user-info h2 {
             margin: 0;
         }
+
         .user-info p {
             margin: 5px 0;
         }
+
         .records-list {
             margin-top: 20px;
-            text-align: left;
         }
+
         .record-item {
             padding: 10px;
             border-bottom: 1px solid #ddd;
+            text-align: left;
         }
+
         .record-item p {
             margin: 0;
         }
+
         .record-item small {
             color: #888;
         }
-        .action-buttons {
-            margin-top: 20px;
-        }
-        .action-buttons a {
+
+        .action-button {
             display: inline-block;
             padding: 10px 20px;
             color: #ffffff;
@@ -66,9 +73,28 @@
             font-size: 1em;
             font-weight: bold;
             transition: background-color 0.3s, transform 0.3s;
-            margin-right: 10px;
+            margin-top: 20px;
         }
-        .action-buttons a:hover {
+
+        .action-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            color: #ffffff;
+            background-color: #007bff;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
             background-color: #0056b3;
             transform: scale(1.05);
         }
@@ -76,18 +102,13 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <h1>Admin Dashboard</h1>
+        <h1>User Dashboard</h1>
 
         <div class="user-info">
-            <h2>Admin Information</h2>
+            <h2>User Information</h2>
             <p><strong>Name:</strong> {{ user.user_id }}</p>
             <p><strong>Email:</strong> {{ user.email }}</p>
             <p><strong>Role:</strong> {{ user.role }}</p>
-        </div>
-
-        <div class="action-buttons">
-            <a href="{{ url_for('admin_requests') }}">View Pending Food Requests</a>
-            <a href="{{ url_for('front_page') }}">Back to Menu</a>
         </div>
 
         <div class="records-list">
@@ -104,6 +125,8 @@
                 <p>You have not created any records.</p>
             {% endif %}
         </div>
+        <a href="{{ url_for('my_requests') }}" class="action-button">View My Requests</a>
+        <a href="{{ url_for('front_page') }}" class="back-button">Back to Menu</a>
     </div>
 </body>
 </html>

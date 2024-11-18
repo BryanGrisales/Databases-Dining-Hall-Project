@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dining Hall Foods</title>
+    <title>{{ hall.name }} - Foods</title>
     <style>
         table {
             width: 100%;
@@ -19,35 +19,64 @@
         }
 
         .back-button {
-        display: inline-block;
-        padding: 10px 20px;
-        color: #ffffff;
-        background-color: #007bff;
-        border-radius: 5px;
-        text-decoration: none;
-        font-size: 1em;
-        font-weight: bold;
-        transition: background-color 0.3s, transform 0.3s;
-        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-    }
+            display: inline-block;
+            padding: 10px 20px;
+            color: #ffffff;
+            background-color: #007bff;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
 
-    .back-button:hover {
-        background-color: #0056b3;
-        transform: scale(1.05);
-    }
+        .back-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
 
-    .back-button:active {
-        transform: scale(1);
-    }
+        .back-button:active {
+            transform: scale(1);
+        }
+
+        form {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
 
-<h1>Foods at {{ hall.name }}</h1>
-
+<h1>{{ hall.name }}</h1>
+<p>Location: {{ hall.location }}</p>
 
 <p><a href="/" class="back-button">Back to Menu</a></p>
+
+<!-- Search Form -->
+<form method="GET" action="{{ url_for('dining_hall_page', hall_id=hall_id) }}">
+    <input type="text" name="query" placeholder="Search foods in this dining hall" value="{{ request.args.get('query', '') }}">
+    <button type="submit">Search</button>
+</form>
 
 <table id="foodsTable" data-sort-dir="asc">
     <thead>
@@ -65,7 +94,7 @@
     <tbody>
         {% for food in foods %}
         <tr>
-            <td>{{ food.name }}</td>
+            <td><a href="{{ url_for('view_records', food_id=food.food_id) }}">{{ food.name }}</a></td>
             <td>{{ food.protein }}</td>
             <td>{{ food.carbs }}</td>
             <td>{{ food.fat }}</td>
@@ -81,16 +110,20 @@
 <script>
     function sortTable(columnIndex) {
         var table = document.getElementById("foodsTable");
-        var rows = Array.from(table.rows).slice(1);
+        var rows = Array.from(table.rows).slice(1); // Exclude header row
         var isAsc = table.getAttribute("data-sort-dir") === "asc";
-        const numericColumns = [1, 2, 3, 4, 5];
+        const numericColumns = [1, 2, 3, 4, 5]; // Columns that should be sorted as numbers
 
         rows.sort(function(rowA, rowB) {
             var cellA = rowA.cells[columnIndex].innerText.trim();
             var cellB = rowB.cells[columnIndex].innerText.trim();
 
+            if (!cellA && !cellB) return 0;
+            if (!cellA) return isAsc ? 1 : -1;
+            if (!cellB) return isAsc ? -1 : 1;
+
             if (numericColumns.includes(columnIndex)) {
-                cellA = parseFloat(cellA) || 0;
+                cellA = parseFloat(cellA) || 0; 
                 cellB = parseFloat(cellB) || 0;
                 return isAsc ? cellA - cellB : cellB - cellA;
             } else {
@@ -99,9 +132,11 @@
         });
 
         table.setAttribute("data-sort-dir", isAsc ? "desc" : "asc");
+
         var tbody = table.querySelector("tbody");
         rows.forEach(row => tbody.appendChild(row));
     }
 </script>
+
 </body>
 </html>

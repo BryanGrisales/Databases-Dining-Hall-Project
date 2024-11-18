@@ -37,8 +37,48 @@
             transform: scale(1.05);
         }
 
-        .back-button:active {
-            transform: scale(1);
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .pagination a {
+            margin: 0 5px;
+            padding: 10px 15px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            color: #007bff;
+        }
+        .pagination a.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .pagination a:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+
+        form {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -47,6 +87,17 @@
 <h1>All Foods</h1>
 
 <p><a href="/" class="back-button">Back to Menu</a></p>
+
+<!-- Search Form -->
+<form method="GET" action="{{ url_for('all_foods') }}">
+    <select name="search_type">
+        <option value="food" {% if request.args.get('search_type', 'food') == 'food' %}selected{% endif %}>Food</option>
+        <option value="category" {% if request.args.get('search_type') == 'category' %}selected{% endif %}>Category</option>
+        <option value="dining_hall" {% if request.args.get('search_type') == 'dining_hall' %}selected{% endif %}>Dining Hall</option>
+    </select>
+    <input type="text" name="query" placeholder="Search..." value="{{ request.args.get('query', '') }}">
+    <button type="submit">Search</button>
+</form>
 
 <table id="foodsTable" data-sort-dir="asc">
     <thead>
@@ -59,7 +110,7 @@
             <th onclick="sortTable(5)">Calories</th>
             <th onclick="sortTable(6)">Serving Size</th>
             <th onclick="sortTable(7)">Category</th>
-            <th onclick="sortTable(8)">Dining Halls</th> <!-- New Column for Sorting -->
+            <th onclick="sortTable(8)">Dining Halls</th>
         </tr>
     </thead>
     <tbody>
@@ -78,6 +129,22 @@
         {% endfor %}
     </tbody>
 </table>
+
+<!-- Pagination -->
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="{{ url_for('all_foods', query=query, search_type=search_type, page=page-1) }}">&laquo; Previous</a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+        <a href="{{ url_for('all_foods', query=query, search_type=search_type, page=p) }}" class="{{ 'active' if p == page else '' }}">{{ p }}</a>
+    {% endfor %}
+
+    {% if page < total_pages %}
+        <a href="{{ url_for('all_foods', query=query, search_type=search_type, page=page+1) }}">Next &raquo;</a>
+    {% endif %}
+</div>
+
 
 <script>
     function sortTable(columnIndex) {
@@ -99,7 +166,6 @@
                 cellB = parseFloat(cellB) || 0;
                 return isAsc ? cellA - cellB : cellB - cellA;
             } else {
-                // Sort alphabetically for non-numeric columns (e.g., Dining Halls)
                 return isAsc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
             }
         });

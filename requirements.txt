@@ -1,0 +1,9 @@
+Flask==2.3.3              # Flask web framework
+Flask-Bcrypt==1.0.1       # For password hashing
+Flask-Session==0.4.0      # For session management
+SQLAlchemy==2.0.21        # For database connection and queries
+psycopg2-binary==2.9.8    # PostgreSQL adapter for Python
+Jinja2==3.1.2             # Template engine for Flask
+Werkzeug==2.3.6           # WSGI utility library for Flask
+click==8.1.7              # Command-line interface utilities for Flask
+

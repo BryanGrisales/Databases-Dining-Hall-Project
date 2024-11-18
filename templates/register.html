@@ -5,91 +5,73 @@
     <title>Register</title>
     <style>
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
             font-family: Arial, sans-serif;
             background-color: #f7f7f7;
+            padding: 20px;
         }
-
-        .register-container {
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
+        h1 {
+            color: #333;
             text-align: center;
         }
-
-        .register-container h1 {
-            margin-bottom: 20px;
-            color: #333;
-            font-size: 1.8em;
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
-        .register-container label {
-            display: block;
-            text-align: left;
-            margin-bottom: 5px;
+        label {
             font-weight: bold;
-            color: #555;
+            margin-top: 10px;
+            display: block;
         }
-
-        .register-container input[type="email"],
-        .register-container input[type="password"] {
+        input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-sizing: border-box;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
-
-        .register-container button {
-            width: 100%;
+        button {
+            background-color: #007bff;
+            color: #fff;
             padding: 10px;
-            background-color: #28a745;
-            color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 1em;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            width: 100%;
         }
-
-        .register-container button:hover {
-            background-color: #218838;
+        button:hover {
+            background-color: #0056b3;
         }
-
-        .register-container p {
-            margin-top: 15px;
-            color: #666;
+        p {
+            text-align: center;
+            margin-top: 10px;
         }
-
-        .register-container a {
+        p a {
             color: #007bff;
             text-decoration: none;
         }
-
-        .register-container a:hover {
+        p a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="register-container">
-        <h1>Register</h1>
-        <form method="POST" action="{{ url_for('register') }}">
-            <label for="email">Email:</label>
-            <input type="email" name="email" id="email" required>
-            <label for="password">Password:</label>
-            <input type="password" name="password" id="password" required>
-            <button type="submit">Register</button>
-        </form>
-        <p><a href="{{ url_for('front_page') }}">Back to Home</a></p>
-    </div>
+    <h1>Register</h1>
+    <form method="POST" action="{{ url_for('register') }}">
+        <label for="email">Email:</label>
+        <input type="email" name="email" required>
+
+        <label for="password">Password:</label>
+        <input type="password" name="password" required>
+
+        <label for="confirm_password">Confirm Password:</label>
+        <input type="password" name="confirm_password" required> <!-- New field -->
+
+        <button type="submit">Register</button>
+    </form>
+    <p><a href="{{ url_for('front_page') }}">Back to Home</a></p>
 </body>
 </html>
