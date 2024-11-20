@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import uuid
 from sqlalchemy import create_engine, text
@@ -9,13 +7,12 @@ from flask_session import Session
 from functools import wraps
 
 
-# Set up Flask and database connection
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 bcrypt = Bcrypt(app)
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_PERMANENT"] = False
-app.secret_key = "your_secret_key"  # Use a secure key in production
+app.secret_key = "your_secret_key"  # -- Might add later
 Session(app)
 
 DB_USER = "sa4469"
@@ -25,9 +22,6 @@ DATABASEURI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_SERVER}/w4111"
 
 engine = create_engine(DATABASEURI)
 
-# --- Define helper functions and decorators ---
-
-# Role-based access control decorator
 def role_required(role):
     def decorator(f):
         @wraps(f)
@@ -39,9 +33,7 @@ def role_required(role):
         return decorated_function
     return decorator
 
-# --- Define routes ---
 
-# Route for front dining hall page
 @app.route("/")
 def front_page():
     with engine.connect() as conn:
@@ -52,10 +44,10 @@ def front_page():
 
 @app.route("/dining_hall/<int:hall_id>")
 def dining_hall_page(hall_id):
-    query = request.args.get("query", "").lower()  # Get the search query
-    search_type = request.args.get("search_type", "food").lower()  # Default to 'food'
-    page = int(request.args.get("page", 1))  # Get the current page, default to 1
-    per_page = 10  # Number of items per page
+    query = request.args.get("query", "").lower()  
+    search_type = request.args.get("search_type", "food").lower()  
+    page = int(request.args.get("page", 1))  
+    per_page = 10  
 
     with engine.connect() as conn:
         # Get dining hall information
@@ -129,15 +121,15 @@ def dining_hall_page(hall_id):
 
 @app.route("/all_foods")
 def all_foods():
-    query = request.args.get("query", "").lower()  # Get the search query
-    search_type = request.args.get("search_type", "food").lower()  # Default to 'food'
-    page = int(request.args.get("page", 1))  # Get the current page, default to 1
-    per_page = 10  # Number of items per page
+    query = request.args.get("query", "").lower()  
+    search_type = request.args.get("search_type", "food").lower()  
+    page = int(request.args.get("page", 1))  
+    per_page = 10  
 
     with engine.connect() as conn:
         # Validate the search type to avoid SQL injection
         valid_search_types = {"food": "f.name", "category": "f.category", "dining_hall": "dh.name"}
-        column = valid_search_types.get(search_type, "f.name")  # Default to food name
+        column = valid_search_types.get(search_type, "f.name") 
 
         # Query for foods with filtering and pagination
         food_query = f"""
@@ -168,7 +160,7 @@ def all_foods():
             text(count_query), {"query": f"%{query}%"}
         ).scalar()
 
-    total_pages = (total_count + per_page - 1) // per_page  # Calculate total pages
+    total_pages = (total_count + per_page - 1) // per_page
 
     return render_template(
         "all_foods.html",
@@ -195,12 +187,9 @@ def register():
 
         try:
             with engine.begin() as conn:
-                # Generate the next user_id
                 user_id = conn.execute(
                     text("SELECT COALESCE(MAX(user_id), 0) + 1 FROM Users")
                 ).scalar()
-
-                # Insert the new user into the database
                 conn.execute(
                     text("""
                         INSERT INTO Users (user_id, email, password, role) 
@@ -209,7 +198,6 @@ def register():
                     {"user_id": user_id, "email": email, "password": password, "role": role}
                 )
 
-                # Log the user in by setting session variables
                 session["user_id"] = user_id
                 session["user_email"] = email
                 session["role"] = role
@@ -235,7 +223,7 @@ def login():
                 {"email": email}
             ).mappings().fetchone()
 
-        if user and user["password"] == password:  # Access password by key
+        if user and user["password"] == password: 
             session["user_id"] = user["user_id"]
             session["user_email"] = user["email"]
             session["role"] = user["role"]
@@ -267,19 +255,16 @@ def admin_dashboard():
             flash("Session expired. Please log in again.", "danger")
             return redirect(url_for("login"))
 
-        # Fetch admin user
         user_query = "SELECT user_id, email, role FROM Users WHERE user_id = :user_id"
         admin_user = conn.execute(text(user_query), {"user_id": user_id}).fetchone()
         if not admin_user:
             flash("Admin user not found. Please log in again.", "danger")
             return redirect(url_for("login"))
 
-        # Pagination variables for users
-        page = int(request.args.get("page", 1))  # Default to page 1
-        per_page = 5  # Users per page
+        page = int(request.args.get("page", 1))
+        per_page = 5  
         offset = (page - 1) * per_page
 
-        # Fetch paginated users
         users_query = """
         SELECT user_id, email, role 
         FROM Users 
@@ -292,7 +277,6 @@ def admin_dashboard():
             {"admin_id": user_id, "limit": per_page, "offset": offset},
         ).fetchall()
 
-        # Fetch total count for pagination
         total_count_query = """
         SELECT COUNT(*) 
         FROM Users 
@@ -304,7 +288,6 @@ def admin_dashboard():
 
         total_pages = (total_count + per_page - 1) // per_page
 
-        # Fetch records created by the admin
         records_query = """
         SELECT r.record_id, r.content, r.time, f.name AS food_name 
         FROM Record r
@@ -316,14 +299,13 @@ def admin_dashboard():
             text(records_query), {"admin_id": user_id}
         ).fetchall()
 
-    # Pass all data to the template
     return render_template(
         "admin_dashboard.html",
         admin=admin_user,
         users=users,
         page=page,
         total_pages=total_pages,
-        records=records,  # Pass records to the template
+        records=records,  
     )
 
 
@@ -335,7 +317,6 @@ def update_role(user_id, new_role):
         return redirect(url_for("admin_dashboard"))
 
     try:
-        # Update the user's role in the database
         with engine.begin() as conn:
             conn.execute(
                 text("UPDATE Users SET role = :new_role WHERE user_id = :user_id"),
@@ -351,7 +332,6 @@ def update_role(user_id, new_role):
 
 
 
-# Custom error page for Access Denied (Optional)
 @app.errorhandler(403)
 def access_denied(error):
     return render_template("403.html"), 403
@@ -372,7 +352,6 @@ def request_food():
             return redirect(url_for("request_food"))
 
         try:
-            # Use engine.begin() for auto-commit
             with engine.begin() as conn:
                 result = conn.execute(
                     text("""
@@ -396,7 +375,6 @@ def request_food():
 @app.route("/records/<int:food_id>", methods=["GET", "POST"])
 def view_records(food_id):
     if request.method == "POST":
-        # Check if user is logged in
         if "user_id" not in session:
             flash("Please log in to create a record.", "warning")
             return redirect(url_for("login"))
@@ -404,7 +382,6 @@ def view_records(food_id):
         content = request.form.get("content")
         user_id = session["user_id"]
 
-        # Log the incoming data
         print(f"User ID: {user_id}, Food ID: {food_id}, Content: {content}")
 
         if not content:
@@ -412,7 +389,6 @@ def view_records(food_id):
             return redirect(url_for("view_records", food_id=food_id))
 
         try:
-            # Use engine.begin() for auto-commit
             with engine.begin() as conn:
                 result = conn.execute(
                     text("""
@@ -467,7 +443,6 @@ def admin_requests():
 @role_required("Admin")
 def update_request(request_id, status):
     try:
-        # Use engine.begin() for explicit commit
         with engine.begin() as conn:
             conn.execute(
                 text("UPDATE Request SET request_status = :status WHERE request_id = :request_id"),
@@ -496,11 +471,9 @@ def user_only(f):
 def user_dashboard():
     user_id = session["user_id"]
     with engine.connect() as conn:
-        # Fetch user information
         user_query = "SELECT user_id, email, role FROM Users WHERE user_id = :user_id"
         user = conn.execute(text(user_query), {"user_id": user_id}).fetchone()
 
-        # Fetch records created by the user
         records_query = """
         SELECT r.record_id, r.content, r.time, f.name AS food_name 
         FROM Record r
@@ -515,7 +488,6 @@ def user_dashboard():
 
 @app.route("/my_requests")
 def my_requests():
-    # Ensure the user is logged in
     if "user_id" not in session:
         flash("Please log in to view your requests.", "warning")
         return redirect(url_for("login"))
@@ -523,7 +495,6 @@ def my_requests():
     user_id = session["user_id"]
 
     with engine.connect() as conn:
-        # Query to fetch user requests
         requests_query = """
         SELECT request_id, request_food_item, description, request_status, request_date
         FROM Request
@@ -538,7 +509,6 @@ def my_requests():
 @role_required("Admin")
 def add_food(request_id):
     with engine.connect() as conn:
-        # Fetch the request details for pending or approved requests
         request_details = conn.execute(
             text("""
                 SELECT request_food_item, description, user_id
@@ -552,7 +522,6 @@ def add_food(request_id):
             flash("Request not found or already processed.", "danger")
             return redirect(url_for("admin_requests"))
 
-        # Fetch available dining halls
         dining_halls = conn.execute(
             text("SELECT hall_id, name FROM Dining_Hall")
         ).fetchall()
@@ -567,7 +536,7 @@ def add_food(request_id):
             sugar = request.form.get("sugar", 0)
             serving_size = request.form.get("serving_size", "N/A")
             category = request.form.get("category", "Other")
-            selected_halls = request.form.getlist("dining_halls")  # Get selected hall IDs
+            selected_halls = request.form.getlist("dining_halls") 
 
             # Validate required fields
             if not name or not calories or not selected_halls:
@@ -576,7 +545,6 @@ def add_food(request_id):
 
             try:
                 with engine.begin() as conn:
-                    # Insert the new food item into the Food table
                     food_id = conn.execute(
                         text("SELECT COALESCE(MAX(food_id), 0) + 1 FROM Food")
                     ).scalar()
@@ -599,7 +567,6 @@ def add_food(request_id):
                         }
                     )
 
-                    # Insert selected dining halls into Food_DiningHall table
                     for hall_id in selected_halls:
                         conn.execute(
                             text("""
@@ -637,7 +604,6 @@ def delete_record(record_id):
     user_id = session["user_id"]
     try:
         with engine.begin() as conn:
-            # Verify that the record belongs to the logged-in user
             record = conn.execute(
                 text("SELECT * FROM Record WHERE record_id = :record_id AND user_id = :user_id"),
                 {"record_id": record_id, "user_id": user_id}

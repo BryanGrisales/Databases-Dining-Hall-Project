@@ -141,7 +141,7 @@
             const table = document.getElementById("foodsTable");
             const tbody = table.querySelector("tbody");
             const rows = Array.from(tbody.rows);
-            const isNumeric = [1, 2, 3, 4, 5].includes(columnIndex); // Numeric columns: Protein, Carbs, Fat, Sugar, Calories
+            const isNumeric = [1, 2, 3, 4, 5].includes(columnIndex); // numeric columns: Protein, Carbs, Fat, Sugar, Calories
 
             if (currentSort.column === columnIndex) {
                 currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
