@@ -4,43 +4,52 @@
     <meta charset="UTF-8">
     <title>All Foods</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            color: #007bff;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: white;
         }
+
         th, td {
-            padding: 10px;
+            padding: 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
-            cursor: pointer;
         }
+
         th {
-            background-color: #f2f2f2;
-        }
-
-        .back-button {
-            display: inline-block;
-            padding: 10px 20px;
-            color: #ffffff;
             background-color: #007bff;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 1em;
-            font-weight: bold;
-            transition: background-color 0.3s, transform 0.3s;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            color: white;
+            cursor: pointer;
+            position: relative;
         }
 
-        .back-button:hover {
-            background-color: #0056b3;
-            transform: scale(1.05);
+        th .sort-indicator {
+            margin-left: 5px;
+            font-size: 0.8rem;
         }
 
         .pagination {
             text-align: center;
-            margin-top: 20px;
+            margin: 20px 0;
         }
+
         .pagination a {
             margin: 0 5px;
             padding: 10px 15px;
@@ -49,10 +58,12 @@
             border-radius: 5px;
             color: #007bff;
         }
+
         .pagination a.active {
             background-color: #007bff;
             color: white;
         }
+
         .pagination a:hover {
             background-color: #0056b3;
             color: white;
@@ -61,14 +72,23 @@
         form {
             margin-bottom: 20px;
             display: flex;
+            justify-content: center;
             gap: 10px;
         }
+
         input[type="text"] {
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             width: 300px;
         }
+
+        select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
         button {
             padding: 10px 20px;
             background-color: #007bff;
@@ -76,16 +96,115 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 1rem;
+            text-transform: uppercase;
         }
+
         button:hover {
             background-color: #0056b3;
         }
+
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            color: white;
+            background-color: #28a745;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .back-button:hover {
+            background-color: #218838;
+            transform: scale(1.05);
+        }
+
+        .reset-button {
+            margin-top: 10px;
+            display: block;
+            margin: 0 auto;
+        }
     </style>
+    <script>
+        let currentSort = { column: null, order: 'asc' };
+        let originalRows;
+
+        function saveOriginalRows() {
+            const tbody = document.getElementById("foodsTable").querySelector("tbody");
+            originalRows = Array.from(tbody.rows);
+        }
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById("foodsTable");
+            const tbody = table.querySelector("tbody");
+            const rows = Array.from(tbody.rows);
+            const isNumeric = [1, 2, 3, 4, 5].includes(columnIndex); // columns that should be sorted as numbers
+
+            if (currentSort.column === columnIndex) {
+                currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = columnIndex;
+                currentSort.order = 'asc';
+            }
+
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.cells[columnIndex].innerText.trim();
+                const cellB = rowB.cells[columnIndex].innerText.trim();
+
+                if (isNumeric) {
+                    return currentSort.order === 'asc'
+                        ? parseFloat(cellA) - parseFloat(cellB)
+                        : parseFloat(cellB) - parseFloat(cellA);
+                } else {
+                    return currentSort.order === 'asc'
+                        ? cellA.localeCompare(cellB)
+                        : cellB.localeCompare(cellA);
+                }
+            });
+
+            tbody.append(...rows);
+            updateSortIndicators(columnIndex);
+        }
+
+        function updateSortIndicators(columnIndex) {
+            const headers = document.querySelectorAll("th");
+            headers.forEach((header, index) => {
+                const indicator = header.querySelector(".sort-indicator");
+                if (index === columnIndex) {
+                    indicator.textContent = currentSort.order === "asc" ? "▲" : "▼";
+                } else {
+                    indicator.textContent = "";
+                }
+            });
+        }
+
+        function resetSorting() {
+            const tbody = document.getElementById("foodsTable").querySelector("tbody");
+            tbody.append(...originalRows);
+            currentSort = { column: null, order: 'asc' };
+            updateSortIndicators(-1); // Reset all indicators
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            saveOriginalRows();
+            const headers = document.querySelectorAll("th");
+            headers.forEach((header) => {
+                const indicator = document.createElement("span");
+                indicator.classList.add("sort-indicator");
+                header.appendChild(indicator);
+            });
+        });
+    </script>
 </head>
 <body>
 
 <h1>All Foods</h1>
 
+<!-- Back to Menu Button -->
 <p><a href="/" class="back-button">Back to Menu</a></p>
 
 <!-- Search Form -->
@@ -99,7 +218,8 @@
     <button type="submit">Search</button>
 </form>
 
-<table id="foodsTable" data-sort-dir="asc">
+<!-- Food Table -->
+<table id="foodsTable">
     <thead>
         <tr>
             <th onclick="sortTable(0)">Name</th>
@@ -130,52 +250,22 @@
     </tbody>
 </table>
 
+<!-- Reset Sorting Button -->
+ 
+<button class="reset-button" onclick="resetSorting()">Reset Sorting</button>
+
 <!-- Pagination -->
 <div class="pagination">
     {% if page > 1 %}
         <a href="{{ url_for('all_foods', query=query, search_type=search_type, page=page-1) }}">&laquo; Previous</a>
     {% endif %}
-
     {% for p in range(1, total_pages + 1) %}
         <a href="{{ url_for('all_foods', query=query, search_type=search_type, page=p) }}" class="{{ 'active' if p == page else '' }}">{{ p }}</a>
     {% endfor %}
-
     {% if page < total_pages %}
         <a href="{{ url_for('all_foods', query=query, search_type=search_type, page=page+1) }}">Next &raquo;</a>
     {% endif %}
 </div>
-
-
-<script>
-    function sortTable(columnIndex) {
-        var table = document.getElementById("foodsTable");
-        var rows = Array.from(table.rows).slice(1); // Exclude header row
-        var isAsc = table.getAttribute("data-sort-dir") === "asc";
-        const numericColumns = [1, 2, 3, 4, 5]; // Columns that should be sorted as numbers
-
-        rows.sort(function(rowA, rowB) {
-            var cellA = rowA.cells[columnIndex].innerText.trim();
-            var cellB = rowB.cells[columnIndex].innerText.trim();
-
-            if (!cellA && !cellB) return 0;
-            if (!cellA) return isAsc ? 1 : -1;
-            if (!cellB) return isAsc ? -1 : 1;
-
-            if (numericColumns.includes(columnIndex)) {
-                cellA = parseFloat(cellA) || 0; 
-                cellB = parseFloat(cellB) || 0;
-                return isAsc ? cellA - cellB : cellB - cellA;
-            } else {
-                return isAsc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
-            }
-        });
-
-        table.setAttribute("data-sort-dir", isAsc ? "desc" : "asc");
-
-        var tbody = table.querySelector("tbody");
-        rows.forEach(row => tbody.appendChild(row));
-    }
-</script>
 
 </body>
 </html>

@@ -2,19 +2,158 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Request Food Item</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request a Food Item</title>
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #343a40;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #007bff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .content-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .request-form {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 60%;
+        }
+
+        label {
+            display: block;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            display: inline-block;
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .checklist {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 35%;
+        }
+
+        .checklist h2 {
+            font-size: 1.2rem;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .checklist ul {
+            list-style-type: disc;
+            padding-left: 20px;
+            color: #495057;
+        }
+
+        .checklist ul li {
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 15px;
+            background-color: #28a745;
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.2s;
+            text-align: center;
+        }
+
+        .back-link:hover {
+            background-color: #218838;
+            transform: scale(1.05);
+        }
+    </style>
 </head>
 <body>
     <h1>Request a Food Item</h1>
-    <form action="{{ url_for('request_food') }}" method="POST">
-        <label for="request_food_item">Food Item Name:</label>
-        <input type="text" name="request_food_item" id="request_food_item" required>
 
-        <label for="description">Description:</label>
-        <textarea name="description" id="description" rows="4"></textarea>
+    <div class="content-container">
+        <!-- Request Form -->
+        <form action="{{ url_for('request_food') }}" method="POST" class="request-form">
+            <label for="request_food_item">Food Item Name:</label>
+            <input type="text" name="request_food_item" id="request_food_item" placeholder="Enter the food name" required>
 
-        <button type="submit">Submit Request</button>
-    </form>
-    <p><a href="{{ url_for('front_page') }}">Back to Menu</a></p>
+            <label for="description">Description:</label>
+            <textarea name="description" id="description" rows="5" placeholder="Provide a brief description of the food item..."></textarea>
+
+            <button type="submit">Submit Request</button>
+        </form>
+
+        <!-- Suggestions Checklist -->
+        <div class="checklist">
+            <h2>Suggestions to Include:</h2>
+            <ul>
+                <li>Add macros: Calories, Protein, Carbs, Fat</li>
+                <li>Specify a category: 'Breakfast', 'Lunch', 'Dinner', or 'Other'</li>
+                <li>Indicate where it was consumed (e.g., location)</li>
+                <li>Provide additional details or comments</li>
+            </ul>
+        </div>
+    </div>
+
+    <a href="{{ url_for('front_page') }}" class="back-link">Back to Menu</a>
 </body>
 </html>

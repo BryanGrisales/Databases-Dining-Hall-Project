@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Food</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        p {
+            text-align: center;
+            font-size: 1.2em;
+            color: #555;
+        }
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select {
+            width: calc(100% - 20px);
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        fieldset {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        legend {
+            font-weight: bold;
+            color: #333;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .dining-halls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .dining-hall-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .dining-halls input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Add Food: {{ request_details.request_food_item }}</h1>
+    <p><strong>Description:</strong> {{ request_details.description }}</p>
+
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ request_details.request_food_item }}" required>
+
+        <label for="calories">Calories:</label>
+        <input type="number" id="calories" name="calories" step="1" required>
+
+        <label for="protein">Protein (g):</label>
+        <input type="number" id="protein" name="protein" step="0.1">
+
+        <label for="carbs">Carbs (g):</label>
+        <input type="number" id="carbs" name="carbs" step="0.1">
+
+        <label for="fat">Fat (g):</label>
+        <input type="number" id="fat" name="fat" step="0.1">
+
+        <label for="sugar">Sugar (g):</label>
+        <input type="number" id="sugar" name="sugar" step="0.1">
+
+        <label for="serving_size">Serving Size:</label>
+        <input type="text" id="serving_size" name="serving_size">
+
+        <label for="category">Category:</label>
+        <select id="category" name="category">
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Other" selected>Other</option>
+        </select>
+
+        <fieldset class="dining-halls">
+            <legend>Select Associated Dining Halls</legend>
+            {% for hall in dining_halls %}
+            <div class="dining-hall-item">
+                <input type="checkbox" id="hall_{{ hall.hall_id }}" name="dining_halls" value="{{ hall.hall_id }}">
+                <label for="hall_{{ hall.hall_id }}">{{ hall.name }}</label>
+            </div>
+            {% endfor %}
+        </fieldset>
+
+        <button type="submit">Add Food</button>
+    </form>
+
+    <a href="{{ url_for('admin_requests') }}">Cancel</a>
+</body>
+</html>

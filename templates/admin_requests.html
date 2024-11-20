@@ -47,15 +47,21 @@
         .deny {
             background-color: #dc3545;
         }
-        .back-link {
+        .back-button {
             display: inline-block;
             margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
             text-decoration: none;
-            color: #007bff;
             font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+            text-align: center;
         }
-        .back-link:hover {
-            text-decoration: underline;
+        .back-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -68,6 +74,7 @@
             <th>Food Item</th>
             <th>Description</th>
             <th>Request Date</th>
+            <th>Request Status</th>
             <th>Actions</th>
         </tr>
         {% for req in requests %}
@@ -77,13 +84,14 @@
             <td>{{ req.request_food_item }}</td>
             <td>{{ req.description }}</td>
             <td>{{ req.request_date }}</td>
+            <td>{{ req.request_status }}</td>
             <td class="actions">
-                <a href="{{ url_for('update_request', request_id=req.request_id, status='approved') }}" class="approve">Approve</a>
+                <a href="{{ url_for('add_food', request_id=req.request_id) }}" class="approve" title="Add food details to approve this request">Approve</a>
                 <a href="{{ url_for('update_request', request_id=req.request_id, status='denied') }}" class="deny">Deny</a>
             </td>
         </tr>
         {% endfor %}
     </table>
-    <p><a href="{{ url_for('admin_dashboard') }}" class="back-link">Back to Admin Dashboard</a></p>
+    <a href="{{ url_for('admin_dashboard') }}" class="back-button">Back to Admin Dashboard</a>
 </body>
 </html>

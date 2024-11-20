@@ -15,10 +15,38 @@
             background-color: #f7f7f7;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
+        .main-header {
             text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .main-header h1 {
+            color: #007bff;
+            font-size: 2.5em;
+            margin: 0;
+        }
+
+        .auth-links {
+            margin-top: 15px;
+            font-size: 1em;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .auth-links a {
+            color: #007bff;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+
+        .subtitle {
+            color: #333;
+            font-size: 1.5em;
+            margin-bottom: 20px;
         }
 
         .dining-hall-list {
@@ -81,26 +109,13 @@
             background-color: #007bff;
             color: #fff;
         }
-
-        .auth-links {
-            margin-top: 15px;
-            font-size: 1em;
-            margin-bottom: 20px;
-        }
-
-        .auth-links a {
-            color: #007bff;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-
-        .auth-links a:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
-    <h1>Dining Halls</h1>
+    <div class="main-header">
+        <h1>CU Foodie Haven</h1>
+    </div>
+
     <div class="auth-links">
         {% if session.get("user_id") %}
             <span>Welcome, {{ session["user_email"] }}{% if session.get("role") == "Admin" %} (Admin){% endif %}!</span>
@@ -110,13 +125,14 @@
             {% else %}
                 <a href="{{ url_for('user_dashboard') }}">User Dashboard</a>
             {% endif %}
+            <a href="{{ url_for('request_food') }}">Request Food</a>
         {% else %}
             <a href="{{ url_for('login') }}">Login</a>
             <a href="{{ url_for('register') }}">Register</a>
         {% endif %}
     </div>
-    
-    
+
+    <div class="subtitle">Dining Halls</div>
 
     <ul class="dining-hall-list">
         {% for hall in dining_halls %}

@@ -15,8 +15,8 @@
             background-color: #f7f7f7;
         }
         .dashboard-container {
-            width: 80%;
-            max-width: 800px;
+            width: 90%;
+            max-width: 1200px;
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
@@ -25,9 +25,10 @@
         }
         h1 {
             color: #333;
+            text-align: center;
         }
         .user-info {
-            background-color: #f0f0f0;
+            background-color: #f9f9f9;
             padding: 15px;
             margin-bottom: 20px;
             border-radius: 5px;
@@ -39,22 +40,11 @@
         .user-info p {
             margin: 5px 0;
         }
-        .records-list {
-            margin-top: 20px;
-            text-align: left;
-        }
-        .record-item {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-        .record-item p {
-            margin: 0;
-        }
-        .record-item small {
-            color: #888;
-        }
         .action-buttons {
             margin-top: 20px;
+            display: flex;
+            justify-content: flex-start; /* Left-align the buttons */
+            gap: 10px;
         }
         .action-buttons a {
             display: inline-block;
@@ -66,11 +56,89 @@
             font-size: 1em;
             font-weight: bold;
             transition: background-color 0.3s, transform 0.3s;
-            margin-right: 10px;
         }
         .action-buttons a:hover {
             background-color: #0056b3;
             transform: scale(1.05);
+        }
+        .records-list, .manage-users {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .records-list h2, .manage-users h2 {
+            margin: 0;
+        }
+        .records-list p {
+            margin: 5px 0;
+        }
+        .record-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left; /* Left-align the record items */
+        }
+        .record-item p, .record-item small {
+            margin: 0; /* Ensure proper spacing */
+        }
+        .record-item form {
+            margin-top: 10px; /* Add spacing above the delete button */
+        }
+        .user-actions form {
+            display: flex;
+            justify-content: center;
+        }
+        .user-actions form button {
+            border: none;
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .user-actions form button:hover {
+            background-color: #218838;
+            transform: scale(1.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+        td {
+            text-align: center;
+        }
+        .pagination {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .pagination a {
+            margin: 0 5px;
+            padding: 10px 15px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            color: #007bff;
+        }
+        .pagination a.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .pagination a:hover {
+            background-color: #0056b3;
+            color: white;
         }
     </style>
 </head>
@@ -78,31 +146,82 @@
     <div class="dashboard-container">
         <h1>Admin Dashboard</h1>
 
+        <!-- Admin Info Section -->
         <div class="user-info">
             <h2>Admin Information</h2>
-            <p><strong>Name:</strong> {{ user.user_id }}</p>
-            <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Role:</strong> {{ user.role }}</p>
+            <p><strong>ID:</strong> {{ admin.user_id }}</p>
+            <p><strong>Email:</strong> {{ admin.email }}</p>
+            <p><strong>Role:</strong> {{ admin.role }}</p>
         </div>
 
+        <!-- Action Buttons -->
         <div class="action-buttons">
             <a href="{{ url_for('admin_requests') }}">View Pending Food Requests</a>
+            <a href="{{ url_for('my_requests') }}">View My Requests</a>
             <a href="{{ url_for('front_page') }}">Back to Menu</a>
         </div>
 
+        <!-- Records Section -->
         <div class="records-list">
             <h2>Your Records</h2>
             {% if records %}
                 {% for record in records %}
                     <div class="record-item">
-                        <p><strong>Food:</strong> {{ record.food_name }}</p>
-                        <p>{{ record.content }}</p>
-                        <small>Created on {{ record.time }}</small>
+                        <div>
+                            <p><strong>Food:</strong> {{ record.food_name }}</p>
+                            <p>{{ record.content }}</p>
+                            <small>Created on {{ record.time }}</small>
+                        </div>
+                        <form method="POST" action="{{ url_for('delete_record', record_id=record.record_id) }}">
+                            <button type="submit" class="delete-button">Delete</button>
+                        </form>
                     </div>
                 {% endfor %}
             {% else %}
                 <p>You have not created any records.</p>
             {% endif %}
+        </div>
+
+        <!-- Manage Users Section -->
+        <div class="manage-users">
+            <h2>Manage Users</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Email</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users if user.role == "Visitor" %}
+                    <tr>
+                        <td>{{ user.user_id }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <div class="user-actions">
+                                <form method="POST" action="{{ url_for('update_role', user_id=user.user_id, new_role='Admin') }}">
+                                    <button type="submit">Promote to Admin</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if page > 1 %}
+                    <a href="{{ url_for('admin_dashboard', page=page-1) }}">&laquo; Previous</a>
+                {% endif %}
+                {% for p in range(1, total_pages + 1) %}
+                    <a href="{{ url_for('admin_dashboard', page=p) }}" class="{{ 'active' if p == page else '' }}">{{ p }}</a>
+                {% endfor %}
+                {% if page < total_pages %}
+                    <a href="{{ url_for('admin_dashboard', page=page+1) }}">Next &raquo;</a>
+                {% endif %}
+            </div>
         </div>
     </div>
 </body>

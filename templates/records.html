@@ -2,39 +2,183 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Records for {{ food.name }}</title>
     <style>
-        /* Basic styling for layout */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f7f7f7;
+            background-color: #f8f9fa;
+            color: #343a40;
         }
+
         h1 {
-            color: #333;
+            text-align: center;
+            font-size: 2rem;
+            color: #007bff;
+            margin-bottom: 20px;
         }
-        .record-list, .record-form {
-            margin-top: 20px;
-            background-color: #fff;
+
+        h2 {
+            font-size: 1.5rem;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        p {
+            margin: 0 0 10px;
+        }
+
+        /* Food Info Section */
+        .food-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            background-color: #ffffff;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
         }
+
+        .food-info div {
+            margin: 10px;
+            text-align: center;
+        }
+
+        .food-info div p {
+            margin: 0;
+            font-size: 1rem;
+            color: #6c757d;
+        }
+
+        /* Record List */
+        .record-list {
+            margin-top: 20px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
         .record-item {
-            margin-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+            padding: 10px 0;
         }
+
+        .record-item:last-child {
+            border-bottom: none;
+        }
+
         .record-item p {
             margin: 0;
         }
+
         .record-item small {
-            color: #888;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .no-records {
+            text-align: center;
+            font-size: 1rem;
+            color: #6c757d;
+        }
+
+        .record-form {
+            margin-top: 30px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .login-message {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #6c757d;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-message a {
+            color: #007bff;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .login-message a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #ffffff;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .back-link:hover {
+            background-color: #218838;
         }
     </style>
 </head>
 <body>
     <h1>Records for {{ food.name }}</h1>
-    <p>Calories: {{ food.calories }}</p>
+
+    <div class="food-info">
+        <div>
+            <p><strong>Calories:</strong> {{ food.calories }}</p>
+        </div>
+        <div>
+            <p><strong>Protein:</strong> {{ food.protein }}g</p>
+        </div>
+        <div>
+            <p><strong>Carbs:</strong> {{ food.carbs }}g</p>
+        </div>
+        <div>
+            <p><strong>Fat:</strong> {{ food.fat }}g</p>
+        </div>
+        <div>
+            <p><strong>Sugar:</strong> {{ food.sugar }}g</p>
+        </div>
+        <div>
+            <p><strong>Serving Size:</strong> {{ food.serving_size }}</p>
+        </div>
+    </div>
 
     <div class="record-list">
         <h2>Existing Records</h2>
@@ -46,7 +190,7 @@
                 </div>
             {% endfor %}
         {% else %}
-            <p>No records found for this item.</p>
+            <p class="no-records">No records found for this item.</p>
         {% endif %}
     </div>
 
@@ -55,14 +199,16 @@
             <h2>Add a New Record</h2>
             <form method="POST">
                 <textarea name="content" rows="4" placeholder="Share your thoughts about this food item..." required></textarea>
-                <br>
                 <button type="submit">Submit Record</button>
             </form>
         </div>
     {% else %}
-        <p><a href="{{ url_for('login') }}">Log in</a> to add a record.</p>
+        <div class="login-message">
+            <p><a href="{{ url_for('login') }}">Log in</a> to add a record about this food.</p>
+        </div>
     {% endif %}
 
-    <p><a href="{{ url_for('front_page') }}">Back to Home</a></p>
+    <a href="{{ url_for('front_page') }}" class="back-link">Back to Home</a>
+    
 </body>
 </html>

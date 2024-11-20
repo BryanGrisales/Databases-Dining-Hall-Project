@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import os
+import uuid
 from sqlalchemy import create_engine, text
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_bcrypt import Bcrypt
 from flask_session import Session
 from functools import wraps
+
 
 # Set up Flask and database connection
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
@@ -62,38 +64,50 @@ def dining_hall_page(hall_id):
         if not hall_result:
             return "Dining Hall not found", 404
 
-        # Build the WHERE clause for filtering
-        where_clause = "1=1"
+        # Validate search_type
+        valid_search_types = {"food": "f.name", "category": "f.category"}
+        if search_type not in valid_search_types:
+            search_type = "food"  # Default to food name
+
+        # Use separate queries for each type to prevent column injection
         if search_type == "food":
-            where_clause = "LOWER(f.name) LIKE :query"
+            food_query = """
+            SELECT f.food_id, f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
+                f.serving_size, f.category
+            FROM Food f
+            JOIN Food_DiningHall fd ON f.food_id = fd.food_id
+            WHERE fd.hall_id = :hall_id AND LOWER(f.name) LIKE :query
+            LIMIT :limit OFFSET :offset
+            """
+            count_query = """
+            SELECT COUNT(f.food_id) AS total
+            FROM Food f
+            JOIN Food_DiningHall fd ON f.food_id = fd.food_id
+            WHERE fd.hall_id = :hall_id AND LOWER(f.name) LIKE :query
+            """
         elif search_type == "category":
-            where_clause = "LOWER(f.category) LIKE :query"
+            food_query = """
+            SELECT f.food_id, f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
+                f.serving_size, f.category
+            FROM Food f
+            JOIN Food_DiningHall fd ON f.food_id = fd.food_id
+            WHERE fd.hall_id = :hall_id AND LOWER(f.category) LIKE :query
+            LIMIT :limit OFFSET :offset
+            """
+            count_query = """
+            SELECT COUNT(f.food_id) AS total
+            FROM Food f
+            JOIN Food_DiningHall fd ON f.food_id = fd.food_id
+            WHERE fd.hall_id = :hall_id AND LOWER(f.category) LIKE :query
+            """
 
-        # Query for foods with filtering and pagination
-        food_query = f"""
-        SELECT f.food_id, f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
-               f.serving_size, f.category
-        FROM Food f
-        JOIN Food_DiningHall fd ON f.food_id = fd.food_id
-        WHERE fd.hall_id = :hall_id AND {where_clause}
-        LIMIT :limit OFFSET :offset
-        """
-
-        # Pagination parameters
-        limit = per_page
-        offset = (page - 1) * per_page
+        # Fetch foods
         foods = conn.execute(
             text(food_query),
-            {"hall_id": hall_id, "query": f"%{query}%", "limit": limit, "offset": offset},
+            {"hall_id": hall_id, "query": f"%{query}%", "limit": per_page, "offset": (page - 1) * per_page},
         ).fetchall()
 
-        # Count total items for pagination
-        count_query = f"""
-        SELECT COUNT(f.food_id) AS total
-        FROM Food f
-        JOIN Food_DiningHall fd ON f.food_id = fd.food_id
-        WHERE fd.hall_id = :hall_id AND {where_clause}
-        """
+        # Fetch total count for pagination
         total_count = conn.execute(
             text(count_query), {"hall_id": hall_id, "query": f"%{query}%"}
         ).scalar()
@@ -121,34 +135,25 @@ def all_foods():
     per_page = 10  # Number of items per page
 
     with engine.connect() as conn:
-        # Build the WHERE clause based on the search type
-        where_clause = "1=1"  # Default: no filtering
-        if search_type == "food":
-            where_clause = "LOWER(f.name) LIKE :query"
-        elif search_type == "category":
-            where_clause = "LOWER(f.category) LIKE :query"
-        elif search_type == "dining_hall":
-            where_clause = "LOWER(dh.name) LIKE :query"
+        # Validate the search type to avoid SQL injection
+        valid_search_types = {"food": "f.name", "category": "f.category", "dining_hall": "dh.name"}
+        column = valid_search_types.get(search_type, "f.name")  # Default to food name
 
         # Query for foods with filtering and pagination
         food_query = f"""
         SELECT f.food_id, f.name, f.protein, f.carbs, f.fat, f.sugar, f.calories, 
                f.serving_size, f.category, 
-               STRING_AGG(dh.name, ', ') AS dining_halls
+               STRING_AGG(DISTINCT dh.name, ', ') AS dining_halls
         FROM Food f
         LEFT JOIN Food_DiningHall fd ON f.food_id = fd.food_id
         LEFT JOIN Dining_Hall dh ON fd.hall_id = dh.hall_id
-        WHERE {where_clause}
+        WHERE LOWER({column}) LIKE :query
         GROUP BY f.food_id
         LIMIT :limit OFFSET :offset
         """
-
-        # Pagination parameters
-        limit = per_page
-        offset = (page - 1) * per_page
         foods = conn.execute(
             text(food_query),
-            {"query": f"%{query}%", "limit": limit, "offset": offset},
+            {"query": f"%{query}%", "limit": per_page, "offset": (page - 1) * per_page},
         ).fetchall()
 
         # Count total items for pagination
@@ -157,7 +162,7 @@ def all_foods():
         FROM Food f
         LEFT JOIN Food_DiningHall fd ON f.food_id = fd.food_id
         LEFT JOIN Dining_Hall dh ON fd.hall_id = dh.hall_id
-        WHERE {where_clause}
+        WHERE LOWER({column}) LIKE :query
         """
         total_count = conn.execute(
             text(count_query), {"query": f"%{query}%"}
@@ -176,8 +181,6 @@ def all_foods():
 
 
 
-
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -188,20 +191,35 @@ def register():
 
         if password != confirm_password:
             flash("Passwords do not match. Please try again.", "danger")
-            return render_template("register.html") 
+            return render_template("register.html")
 
-        hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
+        try:
+            with engine.begin() as conn:
+                # Generate the next user_id
+                user_id = conn.execute(
+                    text("SELECT COALESCE(MAX(user_id), 0) + 1 FROM Users")
+                ).scalar()
 
-        with engine.connect() as conn:
-            try:
+                # Insert the new user into the database
                 conn.execute(
-                    text("INSERT INTO Users (email, password, role) VALUES (:email, :password, :role)"),
-                    {"email": email, "password": hashed_password, "role": role}
+                    text("""
+                        INSERT INTO Users (user_id, email, password, role) 
+                        VALUES (:user_id, :email, :password, :role)
+                    """),
+                    {"user_id": user_id, "email": email, "password": password, "role": role}
                 )
-                flash("Registration successful!", "success")
-                return redirect(url_for("login"))
-            except Exception as e:
-                flash("Registration failed. Please try again.", "danger")
+
+                # Log the user in by setting session variables
+                session["user_id"] = user_id
+                session["user_email"] = email
+                session["role"] = role
+
+                flash("Registration successful! You are now logged in.", "success")
+                return redirect(url_for("front_page"))
+        except Exception as e:
+            print(f"INSERT FAILED: {e}")
+            flash("Registration failed. Please try again.", "danger")
+
     return render_template("register.html")
 
 
@@ -240,28 +258,96 @@ def logout():
     flash("You have been logged out", "info")
     return redirect(url_for("front_page"))
 
-# Admin-only dashboard
 @app.route("/admin_dashboard")
 @role_required("Admin")
 def admin_dashboard():
-    user_id = session["user_id"]
-
     with engine.connect() as conn:
-        # Fetch the admin's information
-        user_query = "SELECT user_id, email, role FROM Users WHERE user_id = :user_id"
-        user = conn.execute(text(user_query), {"user_id": user_id}).fetchone()
+        user_id = session.get("user_id")
+        if not user_id:
+            flash("Session expired. Please log in again.", "danger")
+            return redirect(url_for("login"))
 
-        # Fetch all records created by the admin
+        # Fetch admin user
+        user_query = "SELECT user_id, email, role FROM Users WHERE user_id = :user_id"
+        admin_user = conn.execute(text(user_query), {"user_id": user_id}).fetchone()
+        if not admin_user:
+            flash("Admin user not found. Please log in again.", "danger")
+            return redirect(url_for("login"))
+
+        # Pagination variables for users
+        page = int(request.args.get("page", 1))  # Default to page 1
+        per_page = 5  # Users per page
+        offset = (page - 1) * per_page
+
+        # Fetch paginated users
+        users_query = """
+        SELECT user_id, email, role 
+        FROM Users 
+        WHERE user_id != :admin_id
+        ORDER BY role, email
+        LIMIT :limit OFFSET :offset
+        """
+        users = conn.execute(
+            text(users_query),
+            {"admin_id": user_id, "limit": per_page, "offset": offset},
+        ).fetchall()
+
+        # Fetch total count for pagination
+        total_count_query = """
+        SELECT COUNT(*) 
+        FROM Users 
+        WHERE user_id != :admin_id
+        """
+        total_count = conn.execute(
+            text(total_count_query), {"admin_id": user_id}
+        ).scalar()
+
+        total_pages = (total_count + per_page - 1) // per_page
+
+        # Fetch records created by the admin
         records_query = """
-        SELECT r.content, r.time, f.name AS food_name 
+        SELECT r.record_id, r.content, r.time, f.name AS food_name 
         FROM Record r
         JOIN Food f ON r.food_id = f.food_id
-        WHERE r.user_id = :user_id
+        WHERE r.user_id = :admin_id
         ORDER BY r.time DESC
         """
-        records = conn.execute(text(records_query), {"user_id": user_id}).fetchall()
+        records = conn.execute(
+            text(records_query), {"admin_id": user_id}
+        ).fetchall()
 
-    return render_template("admin_dashboard.html", user=user, records=records)
+    # Pass all data to the template
+    return render_template(
+        "admin_dashboard.html",
+        admin=admin_user,
+        users=users,
+        page=page,
+        total_pages=total_pages,
+        records=records,  # Pass records to the template
+    )
+
+
+@app.route("/update_role/<int:user_id>/<new_role>", methods=["POST"])
+@role_required("Admin")
+def update_role(user_id, new_role):
+    if new_role not in ["Admin", "Visitor"]:
+        flash("Invalid role specified.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        # Update the user's role in the database
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE Users SET role = :new_role WHERE user_id = :user_id"),
+                {"new_role": new_role, "user_id": user_id}
+            )
+        flash(f"User role updated to {new_role} successfully!", "success")
+    except Exception as e:
+        print(f"UPDATE ROLE FAILED: {e}")
+        flash("Failed to update user role. Please try again.", "danger")
+
+    return redirect(url_for("admin_dashboard"))
+
 
 
 
@@ -281,58 +367,91 @@ def request_food():
         description = request.form.get("description")
         user_id = session["user_id"]
 
-        with engine.connect() as conn:
-            conn.execute(
-                text("""
-                    INSERT INTO Request (user_id, request_food_item, description, request_status, request_date)
-                    VALUES (:user_id, :request_food_item, :description, 'pending', CURRENT_DATE)
-                """),
-                {"user_id": user_id, "request_food_item": request_food_item, "description": description}
-            )
+        if not request_food_item:
+            flash("Food item name cannot be empty.", "danger")
+            return redirect(url_for("request_food"))
 
-        flash("Food request submitted successfully!", "success")
+        try:
+            # Use engine.begin() for auto-commit
+            with engine.begin() as conn:
+                result = conn.execute(
+                    text("""
+                        INSERT INTO Request (user_id, request_food_item, description, request_status, request_date)
+                        VALUES (:user_id, :request_food_item, :description, 'pending', CURRENT_DATE)
+                    """),
+                    {"user_id": user_id, "request_food_item": request_food_item, "description": description}
+                )
+                print(f"INSERT SUCCESSFUL: {result.rowcount} row(s) affected")
+            flash("Food request submitted successfully!", "success")
+        except Exception as e:
+            print(f"INSERT FAILED: {e}")
+            flash("Failed to submit the food request. Please try again.", "danger")
+            return redirect(url_for("request_food"))
+
         return redirect(url_for("front_page"))
 
     return render_template("request_food.html")
 
+
 @app.route("/records/<int:food_id>", methods=["GET", "POST"])
 def view_records(food_id):
-    with engine.connect() as conn:
-        # Fetch food details
-        food_query = "SELECT name, calories FROM Food WHERE food_id = :food_id"
-        food = conn.execute(text(food_query), {"food_id": food_id}).fetchone()
+    if request.method == "POST":
+        # Check if user is logged in
+        if "user_id" not in session:
+            flash("Please log in to create a record.", "warning")
+            return redirect(url_for("login"))
 
-        # Fetch existing records for this food item
+        content = request.form.get("content")
+        user_id = session["user_id"]
+
+        # Log the incoming data
+        print(f"User ID: {user_id}, Food ID: {food_id}, Content: {content}")
+
+        if not content:
+            flash("Content cannot be empty.", "danger")
+            return redirect(url_for("view_records", food_id=food_id))
+
+        try:
+            # Use engine.begin() for auto-commit
+            with engine.begin() as conn:
+                result = conn.execute(
+                    text("""
+                    INSERT INTO record (food_id, user_id, content, time)
+                    VALUES (:food_id, :user_id, :content, CURRENT_TIMESTAMP)
+                    """),
+                    {"food_id": food_id, "user_id": user_id, "content": content}
+                )
+                print(f"INSERT SUCCESSFUL: {result.rowcount} row(s) affected")
+            flash("Your record has been added successfully!", "success")
+        except Exception as e:
+            print(f"INSERT FAILED: {e}")
+            flash("Failed to add the record. Please try again.", "danger")
+
+        return redirect(url_for("view_records", food_id=food_id))
+
+    with engine.connect() as conn:
+        food_query = """
+        SELECT name, calories, protein, carbs, fat, sugar, serving_size
+        FROM food
+        WHERE food_id = :food_id
+        """
+        food = conn.execute(text(food_query), {"food_id": food_id}).mappings().fetchone()
+
+        if not food:
+            flash("Food item not found.", "danger")
+            return redirect(url_for("front_page"))
+
         records_query = """
-        SELECT r.content, r.time, u.email 
-        FROM Record r
-        JOIN Users u ON r.user_id = u.user_id
+        SELECT r.content, r.time, u.email
+        FROM record r
+        JOIN users u ON r.user_id = u.user_id
         WHERE r.food_id = :food_id
         ORDER BY r.time DESC
         """
         records = conn.execute(text(records_query), {"food_id": food_id}).fetchall()
 
-    # Check if the request is a POST (attempt to add a new record)
-    if request.method == "POST":
-        # Ensure the user is logged in
-        if "user_id" not in session:
-            flash("Please log in to create a record.", "warning")
-            return redirect(url_for("login"))
-
-        # Get the form data for creating a new record
-        content = request.form.get("content")
-        user_id = session["user_id"]
-
-        # Insert the new record into the database
-        with engine.connect() as conn:
-            conn.execute(
-                text("INSERT INTO Record (food_id, user_id, content, time) VALUES (:food_id, :user_id, :content, CURRENT_TIMESTAMP)"),
-                {"food_id": food_id, "user_id": user_id, "content": content}
-            )
-        flash("Your record has been added successfully!", "success")
-        return redirect(url_for("view_records", food_id=food_id))
-
     return render_template("records.html", food=food, records=records)
+
 
 
 
@@ -347,14 +466,21 @@ def admin_requests():
 @app.route("/update_request/<int:request_id>/<status>")
 @role_required("Admin")
 def update_request(request_id, status):
-    with engine.connect() as conn:
-        # Update the request status in the database
-        conn.execute(
-            text("UPDATE Request SET request_status = :status WHERE request_id = :request_id"),
-            {"status": status, "request_id": request_id}
-        )
-    flash(f"Request {status.capitalize()} successfully.", "success")
+    try:
+        # Use engine.begin() for explicit commit
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE Request SET request_status = :status WHERE request_id = :request_id"),
+                {"status": status, "request_id": request_id}
+            )
+        flash(f"Request {status.capitalize()} successfully.", "success")
+    except Exception as e:
+        print(f"UPDATE FAILED: {e}")
+        flash("Failed to update the request. Please try again.", "danger")
+
     return redirect(url_for("admin_requests"))
+
+
 
 def user_only(f):
     @wraps(f)
@@ -376,7 +502,7 @@ def user_dashboard():
 
         # Fetch records created by the user
         records_query = """
-        SELECT r.content, r.time, f.name AS food_name 
+        SELECT r.record_id, r.content, r.time, f.name AS food_name 
         FROM Record r
         JOIN Food f ON r.food_id = f.food_id
         WHERE r.user_id = :user_id
@@ -407,6 +533,132 @@ def my_requests():
         user_requests = conn.execute(text(requests_query), {"user_id": user_id}).fetchall()
 
     return render_template("my_requests.html", requests=user_requests)
+
+@app.route("/add_food/<int:request_id>", methods=["GET", "POST"])
+@role_required("Admin")
+def add_food(request_id):
+    with engine.connect() as conn:
+        # Fetch the request details for pending or approved requests
+        request_details = conn.execute(
+            text("""
+                SELECT request_food_item, description, user_id
+                FROM Request
+                WHERE request_id = :request_id AND request_status = 'pending'
+            """),
+            {"request_id": request_id}
+        ).mappings().fetchone()
+
+        if not request_details:
+            flash("Request not found or already processed.", "danger")
+            return redirect(url_for("admin_requests"))
+
+        # Fetch available dining halls
+        dining_halls = conn.execute(
+            text("SELECT hall_id, name FROM Dining_Hall")
+        ).fetchall()
+
+        if request.method == "POST":
+            # Collect form data
+            name = request.form.get("name")
+            calories = request.form.get("calories", 0)
+            protein = request.form.get("protein", 0)
+            carbs = request.form.get("carbs", 0)
+            fat = request.form.get("fat", 0)
+            sugar = request.form.get("sugar", 0)
+            serving_size = request.form.get("serving_size", "N/A")
+            category = request.form.get("category", "Other")
+            selected_halls = request.form.getlist("dining_halls")  # Get selected hall IDs
+
+            # Validate required fields
+            if not name or not calories or not selected_halls:
+                flash("Please fill out all required fields and select at least one dining hall.", "danger")
+                return render_template("add_food.html", request_details=request_details, dining_halls=dining_halls)
+
+            try:
+                with engine.begin() as conn:
+                    # Insert the new food item into the Food table
+                    food_id = conn.execute(
+                        text("SELECT COALESCE(MAX(food_id), 0) + 1 FROM Food")
+                    ).scalar()
+
+                    conn.execute(
+                        text("""
+                            INSERT INTO Food (food_id, name, calories, protein, carbs, fat, sugar, serving_size, category)
+                            VALUES (:food_id, :name, :calories, :protein, :carbs, :fat, :sugar, :serving_size, :category)
+                        """),
+                        {
+                            "food_id": food_id,
+                            "name": name,
+                            "calories": calories,
+                            "protein": protein,
+                            "carbs": carbs,
+                            "fat": fat,
+                            "sugar": sugar,
+                            "serving_size": serving_size,
+                            "category": category,
+                        }
+                    )
+
+                    # Insert selected dining halls into Food_DiningHall table
+                    for hall_id in selected_halls:
+                        conn.execute(
+                            text("""
+                                INSERT INTO Food_DiningHall (food_id, hall_id)
+                                VALUES (:food_id, :hall_id)
+                            """),
+                            {"food_id": food_id, "hall_id": int(hall_id)}
+                        )
+
+                    # Update the request status to 'approved'
+                    conn.execute(
+                        text("""
+                            UPDATE Request
+                            SET request_status = 'approved'
+                            WHERE request_id = :request_id
+                        """),
+                        {"request_id": request_id}
+                    )
+
+                    flash("Food item and associated dining halls added successfully!", "success")
+                    return redirect(url_for("admin_requests"))
+
+            except Exception as e:
+                print(f"INSERT FAILED: {e}")
+                flash("Failed to add the food item. Please try again.", "danger")
+
+    return render_template("add_food.html", request_details=request_details, dining_halls=dining_halls)
+
+@app.route("/delete_record/<int:record_id>", methods=["POST"])
+def delete_record(record_id):
+    if "user_id" not in session:
+        flash("Please log in to delete a record.", "danger")
+        return redirect(url_for("login"))
+    
+    user_id = session["user_id"]
+    try:
+        with engine.begin() as conn:
+            # Verify that the record belongs to the logged-in user
+            record = conn.execute(
+                text("SELECT * FROM Record WHERE record_id = :record_id AND user_id = :user_id"),
+                {"record_id": record_id, "user_id": user_id}
+            ).fetchone()
+
+            if not record:
+                flash("You do not have permission to delete this record.", "danger")
+                return redirect(url_for("user_dashboard") if session["role"] == "Visitor" else url_for("admin_dashboard"))
+
+            # Delete the record
+            conn.execute(
+                text("DELETE FROM Record WHERE record_id = :record_id"),
+                {"record_id": record_id}
+            )
+            flash("Record deleted successfully.", "success")
+    except Exception as e:
+        print(f"DELETE RECORD FAILED: {e}")
+        flash("Failed to delete the record. Please try again.", "danger")
+    
+    return redirect(url_for("user_dashboard") if session["role"] == "Visitor" else url_for("admin_dashboard"))
+
 
 
 
